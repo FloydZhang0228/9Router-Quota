@@ -28,3 +28,13 @@ export interface AccountQuota {
   connection: Connection;
   usage: Usage;
 }
+
+/** /api/usage/stream 推送的一条最近请求，timestamp 是真实 ISO 时间（可靠地算相对时间）。 */
+export interface RecentRequest {
+  timestamp: string;
+  model: string;
+  provider: string;
+  promptTokens: number;
+  completionTokens: number;
+  status: string;
+}

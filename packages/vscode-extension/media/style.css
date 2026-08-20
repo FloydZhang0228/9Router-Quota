@@ -1,10 +1,16 @@
+html, body { height: 100%; }
 body {
   font-family: var(--vscode-font-family);
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
   padding: 8px 12px;
   font-size: 13px;
+  margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
+/* 面板整体是个 app-shell：工具栏/页脚固定，中间账号列表自己滚动，页脚才能真正贴底 */
+#root { display: flex; flex-direction: column; height: 100%; }
 
 .login { display: flex; flex-direction: column; gap: 6px; }
 .login label { font-size: 11px; color: var(--vscode-descriptionForeground); }
@@ -34,11 +40,12 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: var(--vscode-descriptionForeground);
   font-size: 11px;
+  flex: none;
 }
-.toolbar .actions { display: flex; gap: 4px; }
+.toolbar .actions { display: flex; gap: 4px; align-items: center; }
 .toolbar button, .actions#logout {
   background: transparent;
   color: var(--vscode-foreground);
@@ -46,28 +53,174 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   padding: 2px 6px;
 }
 .toolbar button:hover { background: var(--vscode-toolbar-hoverBackground); }
+.view-toggle[data-active="true"] {
+  background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+  border-radius: 4px;
+}
 
-.account { margin-bottom: 12px; }
-.account-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; gap: 8px; }
-.account-title { font-weight: 600; }
-.account-sub { color: var(--vscode-descriptionForeground); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; }
+.board-list { flex-direction: column; }
 
-.quota-row {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 6px;
-  margin-bottom: 3px;
-  border-radius: 3px;
+.account {
   background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-widget-border, transparent);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.board-grid .account { flex: 1 1 260px; }
+.account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.account-icon { font-size: 14px; display: inline-flex; flex: none; }
+.account-icon img { width: 16px; height: 16px; object-fit: contain; border-radius: 3px; }
+.account-title {
+  font-weight: 600;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account-sub { margin-left: auto; min-width: 0; color: var(--vscode-descriptionForeground); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.account-refresh {
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  padding: 0 2px;
+  font-size: 12px;
+  flex: none;
+}
+.account-refresh:hover { background: var(--vscode-toolbar-hoverBackground); color: var(--vscode-foreground); }
+.account-refresh.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.icon-fallback {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--vscode-badge-background); color: var(--vscode-badge-foreground);
+  font-size: 10px; font-weight: 700;
+}
+
+/* list view rows */
+.quota-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+.quota-pill {
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.quota-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--vscode-scrollbarSlider-background);
   overflow: hidden;
 }
-.quota-row .bar {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  background: var(--vscode-charts-green);
-  opacity: 0.35;
+.quota-fill { height: 100%; border-radius: 3px; background: var(--vscode-charts-green); }
+.quota-row[data-level="amber"] .quota-fill { background: var(--vscode-charts-yellow); }
+.quota-row[data-level="red"] .quota-fill { background: var(--vscode-charts-red); }
+.quota-percent { font-size: 11px; width: 3em; text-align: right; flex: none; }
+.quota-meta { color: var(--vscode-descriptionForeground); font-size: 11px; flex: none; }
+
+/* grid/ring view */
+.ring-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.ring-card { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; }
+.ring {
+  --percent: 0;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: conic-gradient(var(--vscode-charts-green) calc(var(--percent) * 1%), var(--vscode-scrollbarSlider-background) 0);
+  display: flex; align-items: center; justify-content: center;
 }
-.quota-name, .quota-desc { position: relative; z-index: 1; }
-.quota-desc { color: var(--vscode-descriptionForeground); font-size: 11px; text-align: right; }
+.ring[data-level="amber"] { background: conic-gradient(var(--vscode-charts-yellow) calc(var(--percent) * 1%), var(--vscode-scrollbarSlider-background) 0); }
+.ring[data-level="red"] { background: conic-gradient(var(--vscode-charts-red) calc(var(--percent) * 1%), var(--vscode-scrollbarSlider-background) 0); }
+.ring[data-level="none"] { background: var(--vscode-scrollbarSlider-background); }
+.ring-inner {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--vscode-input-background);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+}
+.ring-label {
+  font-size: 10px; text-align: center; color: var(--vscode-descriptionForeground);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 64px;
+}
+.ring-meta {
+  font-size: 9px; text-align: center; color: var(--vscode-descriptionForeground);
+  opacity: 0.8; white-space: nowrap;
+}
+
+/* 主题强制覆盖：跟随系统时按 body 上的 vscode-dark/vscode-light class 解析成下面两套之一 */
+body[data-theme="dark"] {
+  --vscode-foreground: #d6dde8;
+  --vscode-editor-background: #0f1a2e;
+  --vscode-descriptionForeground: #8b96ac;
+  --vscode-input-background: #17233d;
+  --vscode-input-foreground: #d6dde8;
+  --vscode-input-border: #24314f;
+  --vscode-button-background: #2f6fd6;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #4680e0;
+  --vscode-errorForeground: #f48771;
+  --vscode-toolbar-hoverBackground: rgba(90, 130, 200, 0.2);
+  --vscode-widget-border: #24314f;
+  --vscode-badge-background: #2f6fd6;
+  --vscode-badge-foreground: #ffffff;
+  --vscode-scrollbarSlider-background: rgba(120, 150, 200, 0.25);
+  --vscode-charts-green: #4fd17a;
+  --vscode-charts-yellow: #e0b94a;
+  --vscode-charts-red: #ef5f5f;
+}
+body[data-theme="light"] {
+  --vscode-foreground: #3b3b3b;
+  --vscode-editor-background: #f0f0f2;
+  --vscode-descriptionForeground: #717171;
+  --vscode-input-background: #ffffff;
+  --vscode-input-foreground: #3b3b3b;
+  --vscode-input-border: #d8d8d8;
+  --vscode-button-background: #007acc;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #0062a3;
+  --vscode-errorForeground: #a1260d;
+  --vscode-toolbar-hoverBackground: rgba(120, 120, 120, 0.16);
+  --vscode-widget-border: #e0e0e2;
+  --vscode-badge-background: #e4e4e8;
+  --vscode-badge-foreground: #3b3b3b;
+  --vscode-scrollbarSlider-background: rgba(0, 0, 0, 0.12);
+  --vscode-charts-green: #2e8b3d;
+  --vscode-charts-yellow: #b8860b;
+  --vscode-charts-red: #c0392b;
+}
+
+/*
+ * 底部“最近请求”小状态条：flex:none 的固定页脚，不在 .board 的滚动区域内，天然贴底。
+ * 固定 min-height 让它从加载中到有数据再到清空，位置始终稳定，不会“空降”或来回跳。
+ */
+.recent-footer {
+  flex: none;
+  min-height: 34px;
+  margin-top: 10px;
+  padding: 6px 2px 2px;
+  border-top: 1px solid var(--vscode-widget-border, transparent);
+}
+.recent-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.recent-model {
+  color: var(--vscode-foreground);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 45%;
+}
+.recent-tokens { flex: 1; text-align: right; }
+.recent-tokens b { font-weight: 800; }
+.recent-time { flex: none; }

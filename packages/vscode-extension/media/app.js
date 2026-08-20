@@ -1,13 +1,103 @@
 const vscode = acquireVsCodeApi();
 const root = document.getElementById('root');
 
+let lastAccounts = null;
+let lastUpdatedAt = null;
+let lastLogs = [];
+let logsLoaded = false;
+let viewMode = vscode.getState()?.viewMode || 'list';
+let theme = vscode.getState()?.theme || 'system';
+
+function setState(patch) {
+  vscode.setState({ ...vscode.getState(), ...patch });
+}
+
+/** VS Code 会给 webview 的 body 打上 vscode-dark/vscode-light class，随主题切换自动更新。 */
+function hostIsDark() {
+  return document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+}
+
+function applyTheme() {
+  document.body.dataset.theme = theme === 'system' ? (hostIsDark() ? 'dark' : 'light') : theme;
+}
+applyTheme();
+new MutationObserver(() => theme === 'system' && applyTheme()).observe(document.body, {
+  attributes: true,
+  attributeFilter: ['class'],
+});
+
+// 官方 logo 素材，从 9Router 主站同款资源里挑出来的，路径由 extension.ts 通过 data-media 注入。
+const MEDIA_BASE = root.dataset.media || '';
+const HAS_LOGO = new Set([
+  'claude', 'codex', 'antigravity', 'gemini-cli', 'github', 'deepseek', 'kiro', 'qoder', 'ollama',
+  'glm', 'glm-cn', 'minimax', 'minimax-cn', 'vercel-ai-gateway', 'codebuddy-cn', 'codebuddy-intl', 'grok-cli', 'kimi',
+]);
+function iconFor(provider, service) {
+  if (MEDIA_BASE && HAS_LOGO.has(provider)) {
+    return `<img src="${MEDIA_BASE}/providers/${provider}.png" alt="" />`;
+  }
+  return `<span class="icon-fallback">${escapeHtml((service || '?')[0].toUpperCase())}</span>`;
+}
+
+/** 已用百分比 -> 剩余百分比；无数值时返回 null（unlimited 但仍带数值的，如余额，照样换算）。 */
+function remainingOf(q) {
+  if (q.percent == null) return null;
+  return Math.max(0, Math.min(100, 100 - q.percent));
+}
+
+function levelOf(remaining) {
+  if (remaining == null) return 'none';
+  if (remaining < 20) return 'red';
+  if (remaining < 50) return 'amber';
+  return 'green';
+}
+
+function shortTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function timeAgo(iso) {
+  const raw = (Date.now() - new Date(iso).getTime()) / 1000;
+  // 服务端/客户端时钟有几秒误差时，刚推过来的最新一条会算出负数——夹到 0 而不是显示空白。
+  const diff = Math.max(0, Math.floor(Number.isFinite(raw) ? raw : 0));
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 window.addEventListener('message', (event) => {
   const msg = event.data;
   if (msg.type === 'needLogin') renderLogin(msg.baseUrl || '');
   else if (msg.type === 'loading') renderLoading();
-  else if (msg.type === 'quota') renderQuota(msg.accounts, msg.updatedAt);
-  else if (msg.type === 'error') renderError(msg.message);
+  else if (msg.type === 'quota') {
+    lastAccounts = msg.accounts;
+    lastUpdatedAt = msg.updatedAt;
+    renderQuota();
+  } else if (msg.type === 'quotaAccount') {
+    if (lastAccounts) {
+      const idx = lastAccounts.findIndex((a) => a.id === msg.account.id);
+      if (idx >= 0) lastAccounts[idx] = msg.account;
+      else lastAccounts.push(msg.account);
+      renderQuota();
+    }
+  } else if (msg.type === 'recentRequests') {
+    lastLogs = msg.items || [];
+    logsLoaded = true;
+    // 页脚容器还不存在时（比如首次登录）才整页重绘，平时只更新这一小块，不打断滚动位置。
+    const el = document.getElementById('recent-footer');
+    if (el) el.innerHTML = footerRows(lastLogs);
+    else if (lastAccounts) renderQuota();
+  } else if (msg.type === 'error') renderError(msg.message);
 });
+setInterval(() => {
+  const el = document.getElementById('recent-footer');
+  if (el && lastLogs.length) el.innerHTML = footerRows(lastLogs);
+}, 30000);
 
 function renderLogin(baseUrl) {
   root.innerHTML = `
@@ -41,44 +131,132 @@ function renderError(message) {
   document.getElementById('logout').addEventListener('click', () => vscode.postMessage({ type: 'logout' }));
 }
 
-function renderQuota(accounts, updatedAt) {
-  const time = new Date(updatedAt).toLocaleTimeString('zh-CN', { hour12: false });
-  const body = accounts.length
-    ? accounts.map(renderAccount).join('')
+function setViewMode(mode) {
+  viewMode = mode;
+  setState({ viewMode });
+  renderQuota();
+}
+
+const THEME_ICONS = { system: '◐', dark: '🌙', light: '☀️' };
+function cycleTheme() {
+  theme = theme === 'system' ? 'dark' : theme === 'dark' ? 'light' : 'system';
+  setState({ theme });
+  applyTheme();
+  renderQuota();
+}
+
+function renderQuota() {
+  if (!lastAccounts) return;
+  const time = new Date(lastUpdatedAt).toLocaleTimeString('zh-CN', { hour12: false });
+  const body = lastAccounts.length
+    ? lastAccounts.map((acc) => renderAccount(acc, viewMode)).join('')
     : `<div class="status">未获取到任何账号配额</div>`;
   root.innerHTML = `
     <div class="toolbar">
       <span>更新于 ${time}</span>
       <div class="actions">
-        <button id="refresh" title="刷新">⟳</button>
+        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">☰</button>
+        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">◎</button>
+        <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${THEME_ICONS[theme]}</button>
+        <button id="refresh" title="刷新全部">⟳</button>
         <button id="logout" title="退出登录">⎋</button>
       </div>
     </div>
-    ${body}`;
+    <div class="board board-${viewMode}">${body}</div>
+    ${renderRecentFooter()}`;
+  document.getElementById('view-list').addEventListener('click', () => setViewMode('list'));
+  document.getElementById('view-grid').addEventListener('click', () => setViewMode('grid'));
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
   document.getElementById('refresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
   document.getElementById('logout').addEventListener('click', () => vscode.postMessage({ type: 'logout' }));
+  root.querySelectorAll('.account-refresh').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      btn.classList.add('spin');
+      vscode.postMessage({ type: 'refreshAccount', connectionId: btn.dataset.id });
+    })
+  );
 }
 
-function renderAccount(acc) {
-  const quotaRows = acc.quotas.map(renderQuotaRow).join('');
+function footerRows(logs) {
+  if (!logsLoaded) return `<div class="recent-row recent-loading">加载中…</div>`;
+  return logs
+    .slice(0, 2)
+    .map(
+      (l) => `
+      <div class="recent-row">
+        <span class="recent-model">${escapeHtml(l.model)}</span>
+        <span class="recent-tokens">${l.promptTokens}<b>↑</b> ${l.completionTokens}<b>↓</b></span>
+        <span class="recent-time">${timeAgo(l.timestamp)}</span>
+      </div>`
+    )
+    .join('');
+}
+
+// 容器本身始终渲染（哪怕暂时没数据），SSE 消息才能直接找到它做局部更新；
+// 也保证页脚位置从一开始就固定，不会等数据来了才“空降”。
+function renderRecentFooter() {
+  return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}</div>`;
+}
+
+function renderAccount(acc, mode) {
   const sub = [acc.account, acc.plan].filter(Boolean).map(escapeHtml).join(' · ');
+  const body = mode === 'grid' ? acc.quotas.map(renderRing).join('') : acc.quotas.map(renderQuotaRow).join('');
   return `
     <div class="account">
       <div class="account-header">
+        <span class="account-icon">${iconFor(acc.provider, acc.service)}</span>
         <span class="account-title">${escapeHtml(acc.service)}</span>
+        <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">⟳</button>
         <span class="account-sub">${sub}</span>
       </div>
-      ${quotaRows}
+      <div class="${mode === 'grid' ? 'ring-row' : ''}">${body}</div>
     </div>`;
 }
 
+/**
+ * “无硬性上限”但仍带真实余额（如 DeepSeek 信用池：unlimited + total=真实余额，
+ * used/total 只是 0/满 的占位比例，看百分比毫无意义）时，直接显示金额本身。
+ * total===0 的排除掉是因为部分供应商（如 Vercel 的“已用”行）把 total 固定写死为 0
+ * 当占位符，那种不是真余额。
+ */
+function amountText(q) {
+  if (!q.unlimited || !(q.total > 0)) return null;
+  const remain = typeof q.used === 'number' ? Math.max(0, q.total - q.used) : q.total;
+  return Number.isInteger(remain) ? String(remain) : remain.toFixed(2);
+}
+
 function renderQuotaRow(q) {
-  const barStyle = typeof q.percent === 'number' ? `width:${q.percent.toFixed(0)}%` : 'display:none';
+  const remaining = remainingOf(q);
+  const amount = amountText(q);
+  const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
+  const label = amount ?? (remaining != null ? remaining.toFixed(0) + '%' : null);
+  const right =
+    q.unlimited && label == null
+      ? '<span class="quota-percent">无限</span>'
+      : `<div class="quota-track"><div class="quota-fill" style="width:${(remaining ?? (amount != null ? 100 : 0)).toFixed(0)}%"></div></div>
+       <span class="quota-percent">${label ?? '—'}</span>`;
+  const meta = q.resetAt ? `<span class="quota-meta" title="${escapeHtml(q.description)}">↻ ${shortTime(q.resetAt)}</span>` : '';
   return `
-    <div class="quota-row">
-      <div class="bar" style="${barStyle}"></div>
-      <span class="quota-name">${escapeHtml(q.name)}</span>
-      <span class="quota-desc">${escapeHtml(q.description)}</span>
+    <div class="quota-row" data-level="${level}">
+      <span class="quota-pill">${escapeHtml(q.name)}</span>
+      ${right}
+      ${meta}
+    </div>`;
+}
+
+function renderRing(q) {
+  const remaining = remainingOf(q);
+  const amount = amountText(q);
+  const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
+  const percent = remaining ?? (amount != null ? 100 : 0);
+  const text = amount ?? (q.unlimited && remaining == null ? '∞' : remaining != null ? `${remaining.toFixed(0)}%` : '—');
+  return `
+    <div class="ring-card">
+      <div class="ring" data-level="${level}" style="--percent:${percent}">
+        <div class="ring-inner">${text}</div>
+      </div>
+      <span class="ring-label">${escapeHtml(q.name)}</span>
+      ${q.resetAt ? `<span class="ring-meta">↻ ${shortTime(q.resetAt)}</span>` : ''}
     </div>`;
 }
 

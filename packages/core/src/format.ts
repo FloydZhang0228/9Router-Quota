@@ -1,8 +1,6 @@
 import type { Quota } from './types';
 
 export function describeQuota(provider: string, quota: Quota): string {
-  if (quota.unlimited === true) return '无限';
-
   const unit = quota.unit ? ` ${quota.unit}` : '';
   const { used, total } = quota;
   const parts: string[] = [];
@@ -26,12 +24,13 @@ export function describeQuota(provider: string, quota: Quota): string {
     parts.push(`${label} ${quota.resetAt}`);
   }
 
-  return parts.join('；') || '已获取，未返回数值';
+  // unlimited 只表示“无硬性次数上限”，仍可能带有余额等数值，优先展示数值。
+  if (!parts.length) return quota.unlimited === true ? '无限' : '已获取，未返回数值';
+  return parts.join('；');
 }
 
-/** 用于渲染进度条的已用百分比（0-100），无法计算时返回 null。 */
+/** 用于渲染进度条的已用百分比（0-100），无法计算时返回 null（含真正无数据的 unlimited）。 */
 export function quotaPercentUsed(quota: Quota): number | null {
-  if (quota.unlimited === true) return null;
   if (quota.remainingPercentage != null) return Math.max(0, Math.min(100, 100 - quota.remainingPercentage));
   if (typeof quota.used === 'number' && typeof quota.total === 'number' && quota.total > 0) {
     return Math.max(0, Math.min(100, (quota.used / quota.total) * 100));

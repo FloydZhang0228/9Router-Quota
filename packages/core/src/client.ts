@@ -1,4 +1,4 @@
-import type { AccountQuota, Connection, Usage } from './types';
+import type { AccountQuota, Connection, RecentRequest, Usage } from './types';
 
 export class LoginError extends Error {}
 
@@ -56,6 +56,48 @@ export class NineRouterClient {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * 打开 /api/usage/stream 长连接，每次服务端推送就把 recentRequests 喂给 onUpdate。
+   * 这是 9Router 网页仪表盘自己获取“最近请求”的唯一途径（没有对应的一次性 REST 接口）。
+   * 返回值调用后关闭连接。
+   */
+  openRecentRequestsStream(onUpdate: (items: RecentRequest[]) => void): () => void {
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`${this.baseUrl}/api/usage/stream`, {
+          headers: { ...this.headers(), Accept: 'text/event-stream' },
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) return;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let idx;
+          while ((idx = buffer.indexOf('\n\n')) !== -1) {
+            const frame = buffer.slice(0, idx);
+            buffer = buffer.slice(idx + 2);
+            const dataLine = frame.split('\n').find((l) => l.startsWith('data: '));
+            if (!dataLine) continue;
+            try {
+              const parsed = JSON.parse(dataLine.slice(6));
+              if (Array.isArray(parsed.recentRequests)) onUpdate(parsed.recentRequests);
+            } catch {
+              // 忽略单帧解析失败，继续读下一帧
+            }
+          }
+        }
+      } catch {
+        // 连接被 abort 或网络中断，静默结束
+      }
+    })();
+    return () => controller.abort();
   }
 
   /** 登录后一次拉齐全部账号的配额，跳过拉取失败或无配额数据的账号。 */

@@ -8,7 +8,7 @@
     "vscode": "^1.85.0"
   },
   "categories": ["Other"],
-  "activationEvents": [],
+  "activationEvents": ["onStartupFinished"],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -16,13 +16,13 @@
       { "command": "9router-quota.refresh", "title": "刷新 9Router 配额", "icon": "$(refresh)" }
     ],
     "viewsContainers": {
-      "panel": [
-        { "id": "nineRouterQuota", "title": "9Router", "icon": "$(pulse)" }
+      "activitybar": [
+        { "id": "nineRouterQuota", "title": "9Router Quota", "icon": "media/icon.svg" }
       ]
     },
     "views": {
       "nineRouterQuota": [
-        { "type": "webview", "id": "9router-quota.view", "name": "配额" }
+        { "type": "webview", "id": "9router-quota.view", "name": "" }
       ]
     },
     "menus": {
