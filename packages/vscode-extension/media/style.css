@@ -1,0 +1,73 @@
+body {
+  font-family: var(--vscode-font-family);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.login { display: flex; flex-direction: column; gap: 6px; }
+.login label { font-size: 11px; color: var(--vscode-descriptionForeground); }
+.login input {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  padding: 4px 6px;
+  border-radius: 2px;
+}
+.hint { color: var(--vscode-descriptionForeground); font-size: 11px; }
+
+button {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  padding: 4px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+button:hover { background: var(--vscode-button-hoverBackground); }
+
+.status { padding: 12px 0; color: var(--vscode-descriptionForeground); }
+.status.error { color: var(--vscode-errorForeground); }
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+.toolbar .actions { display: flex; gap: 4px; }
+.toolbar button, .actions#logout {
+  background: transparent;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  padding: 2px 6px;
+}
+.toolbar button:hover { background: var(--vscode-toolbar-hoverBackground); }
+
+.account { margin-bottom: 12px; }
+.account-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; gap: 8px; }
+.account-title { font-weight: 600; }
+.account-sub { color: var(--vscode-descriptionForeground); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.quota-row {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  margin-bottom: 3px;
+  border-radius: 3px;
+  background: var(--vscode-input-background);
+  overflow: hidden;
+}
+.quota-row .bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--vscode-charts-green);
+  opacity: 0.35;
+}
+.quota-name, .quota-desc { position: relative; z-index: 1; }
+.quota-desc { color: var(--vscode-descriptionForeground); font-size: 11px; text-align: right; }

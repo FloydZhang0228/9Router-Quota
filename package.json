@@ -1,0 +1,13 @@
+{
+  "name": "9router-quota-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=@9router-quota/core && npm run compile --workspace=9router-quota"
+  },
+  "allowScripts": {
+    "esbuild@0.23.1": true
+  }
+}
