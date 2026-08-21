@@ -147,16 +147,40 @@ git push origin v<版本号>
 
 ## 四、发布到 VSCode Marketplace
 
-### 1. 前置准备（一次性）
+整个流程涉及两个不同的站点，务必用**同一个 Microsoft 账号**登录：Azure DevOps（签发 PAT）和 Marketplace 管理页（创建 Publisher）。绝大多数发布失败都源于这两处账号不一致，或下面第 2 步的 PAT 参数选错。
 
-① 访问 [Azure DevOps](https://dev.azure.com/) 注册账号，创建组织（免费）。
+### 1. 注册 Azure DevOps（一次性）
 
-② 在 Azure DevOps 的 User settings → Personal access tokens 页面新建 PAT：
-Scope 选择 **Custom defined → All accessible organizations**，Expiration 按需设置，创建后立即复制保存（只显示一次）。
+① 访问 [dev.azure.com](https://dev.azure.com/)，用 Microsoft 账号登录。
 
-③ 访问 [Marketplace 发布管理页](https://marketplace.visualstudio.com/manage) ，用上述账号确认能进入管理界面。
+② 首次登录会提示创建组织（organization），名称随意、免费。这个组织本身跟扩展发布没有关系，仅仅是 Azure DevOps 要求账号至少归属一个组织才能签发 PAT。
 
-### 2. 手动发布
+### 2. 创建 PAT（一次性，也是最容易出错的一步）
+
+在 Azure DevOps 右上角头像旁的 **User settings（齿轮/人像图标）→ Personal access tokens → + New Token**，按下表填写：
+
+| 字段 | 取值 | 说明 |
+| --- | --- | --- |
+| Name | 随意，如 `vsce-publish` | 仅用于自己识别 |
+| **Organization** | **All accessible organizations** | 顶部的独立下拉框，默认是你刚建的那个组织名。**必须改成这一项**，否则 PAT 只对该组织有效，发布时报 401 |
+| Expiration | 按需，最长 1 年 | 到期后需重新签发并更新 CI Secret |
+| **Scopes** | 选 **Custom defined**，然后点列表最下方的 **Show all scopes**，展开后勾选 **Marketplace → Manage** | `Manage` 在默认的精简列表里**不显示**，不点 "Show all scopes" 根本找不到；勾 `Manage` 会自动包含 `Acquire` 和 `Publish` |
+
+点 Create 后**立即复制保存**这串 token，关闭弹窗后无法再次查看。
+
+> 常见误区：`Organization` 和 `Scopes` 是两个独立字段。"All accessible organizations" 属于前者，不是 Scope 的一个选项。
+
+### 3. 创建 Publisher（一次性）
+
+① 访问 [Marketplace 发布管理页](https://marketplace.visualstudio.com/manage)，用**与第 1 步相同的 Microsoft 账号**登录。
+
+② 点 **Create publisher**，其中 **ID** 必须与 `packages/vscode-extension/package.json` 里的 `publisher` 字段完全一致（本仓库为 `FloydZhang0228`）。ID 创建后不可更改，Display name 可以随时改。
+
+③ 创建完成后，管理页应能看到这个 publisher 名下的扩展列表（首次为空）。
+
+若跳过这一步直接 publish，会报 `The Personal Access Token used has expired` 或权限类错误——实际原因往往是 publisher 不存在，而非 token 有问题。
+
+### 4. 手动发布
 
 ① 安装发布工具（如尚未安装）：
 
@@ -164,39 +188,60 @@ Scope 选择 **Custom defined → All accessible organizations**，Expiration �
 npm install -g @vscode/vsce
 ```
 
-② 登录（粘贴上面创建的 PAT）：
+② 验证 PAT 与 publisher 均配置正确（这一步失败就不必往下走，先回查第 2、3 步）：
 
 ```bash
 vsce login FloydZhang0228
 ```
 
-③ 打包并发布（仓库根目录执行）：
+粘贴第 2 步的 PAT。看到 `The Personal Access Token succeeded.` 即为通过。
+
+③ 打包并发布：
 
 ```bash
-npm run build
+npm run build                      # 仓库根目录，先构建 core 与扩展
 cd packages/vscode-extension
-vsce publish
+vsce publish --no-dependencies
 ```
 
-发布成功后，扩展出现在 `https://marketplace.visualstudio.com/items?itemName=FloydZhang0228.9router-quota`，用户可直接在 VSCode 扩展面板搜索 `9Router Quota` 安装。
+发布后约几分钟完成校验，扩展出现在 `https://marketplace.visualstudio.com/items?itemName=FloydZhang0228.9router-quota`，用户可在 VSCode 扩展面板搜索 `9Router Quota` 安装。
 
-### 3. 通过 CI 自动发布（可选）
+> `--no-dependencies` 不能省：本仓库是 npm workspace，扩展依赖的 `@9router-quota/core` 已由 esbuild 打进 `dist/`，不加该参数 vsce 会尝试解析 workspace 依赖树并失败。
 
-① 在仓库 Settings → Secrets and variables → Actions 添加 Secret `VSCE_PAT`，值为第 1 步创建的 PAT。
+### 5. 通过 CI 自动发布（可选）
 
-② 修改 `.github/workflows/release.yml`，在打包步骤之后加入：
+① 在仓库 **Settings → Secrets and variables → Actions → New repository secret** 添加：Name 填 `VSCE_PAT`，Secret 填第 2 步的 PAT。
+
+② 修改 `.github/workflows/release.yml`，在 `Package vsix` 步骤之后、`Create GitHub Release` 之前加入：
 
 ```yaml
       - name: Publish to Marketplace
-        run: cd packages/vscode-extension && npx @vscode/vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: cd packages/vscode-extension && npx @vscode/vsce publish --no-dependencies
 ```
+
+`vsce` 会自动读取 `VSCE_PAT` 环境变量。用 env 而非命令行 `-p` 参数，可避免 token 出现在 Actions 日志的命令回显里。
 
 之后每次推 tag，除了产出 GitHub Release，还会同步把新版本推上市场。
 
-### 4. 发布要求清单
+### 6. 发布失败对照表
 
-<1> `package.json` 必须含 `publisher`、`repository`、`license` 字段（本仓库已配齐）。
+| 报错 | 实际原因 |
+| --- | --- |
+| `401 Unauthorized` | PAT 的 Organization 没选 "All accessible organizations"（第 2 步） |
+| `You do not have permission to publish` | Scopes 没勾到 `Marketplace → Manage`，或漏点 "Show all scopes"（第 2 步） |
+| `The Personal Access Token used has expired` | token 真过期，或 publisher 尚未创建（第 3 步） |
+| `Missing publisher name` | `package.json` 缺 `publisher` 字段 |
+| `package.json` 报 private | `"private": true` 会被 vsce 拒绝，须删除该字段 |
+| 版本号已存在 | 同一版本号不能重复发布，需 bump 版本 |
 
-<2> 仓库根目录需有 `LICENSE` 文件（本仓库已含 MIT License）。
+### 7. 仓库侧要求（本仓库均已满足）
 
-<3> `packages/vscode-extension/.vscodeignore` 控制打包内容，避免把源码、CI 配置等打进 vsix（本仓库已配好）。
+<1> `packages/vscode-extension/package.json` 含 `publisher`、`repository`、`license`，且**不含** `"private": true`。
+
+<2> 仓库根目录有 `LICENSE` 文件。
+
+<3> `packages/vscode-extension/README.md` 即 Marketplace 页面正文，其中的截图放在同目录 `images/` 下走相对路径（本仓库为私有，raw.githubusercontent.com 的绝对地址匿名访问会 404）。
+
+<4> `packages/vscode-extension/.vscodeignore` 控制打包内容，避免把源码、CI 配置打进 vsix。
