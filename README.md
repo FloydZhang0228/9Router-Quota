@@ -10,17 +10,19 @@
 
 ### 2. 运行截图
 
+截图素材统一放在 `packages/vscode-extension/images/`（要随 vsix 打包给市场页面用），这里直接引用同一份，不另存一套。
+
 <1> 侧边栏面板 · 列表视图（进度条 + 剩余百分比 + 重置倒计时，底部为实时最近请求）：
 
-<img src="docs/screenshot-list.png" alt="列表视图" width="340" />
+<img src="packages/vscode-extension/images/screenshot-list.png" alt="列表视图" width="340" />
 
 <2> 侧边栏面板 · 圆环视图（同一份数据的紧凑排布，适合账号配额条目较多时速览）：
 
-<img src="docs/screenshot-ring.png" alt="圆环视图" width="340" />
+<img src="packages/vscode-extension/images/screenshot-ring.png" alt="圆环视图" width="340" />
 
 <3> 状态栏悬浮配额卡片（悬停右下角 `9R` 图标）：
 
-<img src="docs/screenshot-tooltip.png" alt="状态栏悬浮卡片" width="360" />
+<img src="packages/vscode-extension/images/screenshot-tooltip.png" alt="状态栏悬浮卡片" width="360" />
 
 ### 3. 功能特性
 
@@ -45,6 +47,7 @@ packages/
                       供各端复用或移植。
   vscode-extension/   VSCode 扩展客户端：活动栏面板 + 状态栏悬浮卡片。
     media/            面板前端资源（app.js / style.css / 各供应商 logo）。
+    images/           README 截图，随 vsix 打包供 Marketplace 页面显示。
     .github/          （仓库级）CI 工作流：tag 触发自动打包发布。
 ```
 
