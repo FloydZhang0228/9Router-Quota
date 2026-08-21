@@ -148,7 +148,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
    * 有没有面板都能跑：状态栏 tooltip 不该依赖用户先手动点开侧边栏才有数据，
    * 所以这里不再要求 this.view 存在，只在真有面板时才顺手 postMessage 过去。
    */
-  async refresh(): Promise<void> {
+  async refresh(reconnectStream = false): Promise<void> {
     const seq = ++this.refreshSeq;
     const baseUrl = getBaseUrl();
     const password = await this.secrets.get(SECRET_KEY);
@@ -157,12 +157,22 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    this.view?.webview.postMessage({ type: 'loading' });
+    // 只有首屏（还没任何数据）才整页显示"加载中"。已有数据时刷新沿用单账号刷新的做法：
+    // 保留当前画面，靠工具栏按钮转圈表示正在刷新，数据回来再整体替换——否则每 5 分钟的
+    // 定时刷新和手动刷新都会把面板清空好几秒。
+    if (!this.lastRendered.length) this.view?.webview.postMessage({ type: 'loading' });
     try {
       const client = new NineRouterClient(baseUrl);
       await client.login(password);
       // 越早开越好：配额要挨个请求每个 provider，慢的话能拖好几秒，
       // “最近请求”页脚不该被它拖着一起等。
+      // 用户主动点"刷新全部"时连底部"最近请求"一起刷：那条 SSE 只在首次登录时开一次，
+      // 万一它挂死或正卡在重连退避里，页脚就会一直停在旧数据上——手动刷新就是用户在说
+      // "给我最新的"，这时候重开一条。首帧可能慢，期间页脚保留旧内容而不是清空。
+      if (reconnectStream) {
+        this.stopRecentStream?.();
+        this.stopRecentStream = undefined;
+      }
       this.ensureRecentStream(client);
       const accounts = await client.fetchAllQuotas();
       if (seq !== this.refreshSeq) return; // 已有更新的刷新在跑，丢弃这次过期结果
@@ -244,7 +254,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
         await this.refresh();
         break;
       case 'refresh':
-        await this.refresh();
+        await this.refresh(true);
         break;
       case 'refreshAccount':
         if (message.connectionId) await this.refreshAccount(message.connectionId);
@@ -319,7 +329,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('9router-quota.open', () =>
       vscode.commands.executeCommand('workbench.view.extension.nineRouterQuota')
     ),
-    vscode.commands.registerCommand('9router-quota.refresh', () => provider.refresh())
+    vscode.commands.registerCommand('9router-quota.refresh', () => provider.refresh(true))
   );
 }
 

@@ -3,7 +3,8 @@ body {
   font-family: var(--vscode-font-family);
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
-  padding: 8px 12px;
+  /* 左右留白压到 4px：侧边栏本来就窄，卡片尽量贴边，宽度全留给内容 */
+  padding: 8px 4px;
   font-size: 13px;
   margin: 0;
   box-sizing: border-box;
@@ -94,7 +95,9 @@ button:hover { background: var(--vscode-button-hoverBackground); }
  * 未换行前 ring-row 的内容宽度）更窄——配额多的账号卡片就会被自己的圆环撑宽，
  * 导致每个账号卡片宽度不一样（配额多的能挤两列，配额少的只能一列）。
  */
-.board-grid .account { flex: 1 1 100%; min-width: 0; }
+/* 圆环卡自带 10px 内边距，账号卡再套 12px 就成了双层留白，一列的宽度白白吃掉一半；
+   这里收到 4px，最左那列圆环几乎贴住账号卡边界。 */
+.board-grid .account { flex: 1 1 100%; min-width: 0; padding: 10px 1px; }
 .account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .account-icon { font-size: 14px; display: inline-flex; flex: none; }
 .account-icon img { width: 16px; height: 16px; object-fit: contain; border-radius: 3px; }
@@ -124,7 +127,7 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   flex: none;
 }
 .account-refresh:hover { background: var(--vscode-toolbar-hoverBackground); color: var(--vscode-foreground); }
-.account-refresh.spin { animation: spin 0.8s linear infinite; }
+.spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .icon-fallback {
@@ -222,7 +225,7 @@ body[data-theme="dark"] {
   --vscode-badge-foreground: #ffffff;
   --vscode-scrollbarSlider-background: rgba(120, 150, 200, 0.25);
   --vscode-charts-green: #4fd17a;
-  --vscode-charts-yellow: #e0b94a;
+  --vscode-charts-yellow: #f0d264;
   --vscode-charts-red: #ef5f5f;
 }
 body[data-theme="light"] {
@@ -242,7 +245,7 @@ body[data-theme="light"] {
   --vscode-badge-foreground: #3b3b3b;
   --vscode-scrollbarSlider-background: rgba(0, 0, 0, 0.12);
   --vscode-charts-green: #2e8b3d;
-  --vscode-charts-yellow: #b8860b;
+  --vscode-charts-yellow: #d4a72c;
   --vscode-charts-red: #c0392b;
 }
 

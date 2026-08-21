@@ -177,7 +177,12 @@ function renderQuota() {
   document.getElementById('view-list').addEventListener('click', () => setViewMode('list'));
   document.getElementById('view-grid').addEventListener('click', () => setViewMode('grid'));
   document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
-  document.getElementById('refresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
+  // 刷新期间不再清空面板（扩展主机那边已改成有数据就不发 loading），
+  // 改成跟单账号刷新一样让按钮转圈；数据回来 renderQuota 整页重绘，class 自然消失。
+  document.getElementById('refresh').addEventListener('click', (e) => {
+    e.currentTarget.classList.add('spin');
+    vscode.postMessage({ type: 'refresh' });
+  });
   document.getElementById('logout').addEventListener('click', () => vscode.postMessage({ type: 'logout' }));
   root.querySelectorAll('.account-refresh').forEach((btn) =>
     btn.addEventListener('click', () => {
