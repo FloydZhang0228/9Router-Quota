@@ -115,32 +115,32 @@ code --install-extension 9router-quota-<版本号>.vsix
 
 ### 1. 工作流说明
 
-仓库内置 `.github/workflows/release.yml`：推送 `v` 开头的 tag（如 `v0.1.1`）时自动触发，流程为拉取代码 → `npm ci` → 构建 core → `vsce package` 打包 → 创建 GitHub Release 并上传 vsix 附件。
+仓库内置 `.github/workflows/release.yml`：推送 `v` 开头的 SemVer tag（如 `v0.2.0`）时自动触发，流程为拉取代码 → `npm ci` → 构建 core → 从 tag 同步扩展 manifest 版本 → `vsce package` 打包 → 校验 VSIX 文件名版本 → 创建 GitHub Release 并上传附件。
 
 ### 2. 发布步骤
 
-① 更新 `packages/vscode-extension/package.json` 中的 `version` 字段。
-
-② 提交并推送至 `master`：
+① 提交并推送代码至 `master`：
 
 ```bash
 git add -A && git commit -m "..." && git push origin master
 ```
 
-③ 打 tag 并推送：
+② 打 tag 并推送（无需手动修改 `package.json` 的 `version`）：
 
 ```bash
 git tag v<版本号>
 git push origin v<版本号>
 ```
 
-④ 到仓库 Actions 页确认 Release 工作流执行成功，Releases 页即可下载 vsix。
+例如 `v0.2.0` 会自动产出 `9router-quota-0.2.0.vsix`。版本同步只发生在 GitHub Actions 的临时工作区，不会回写仓库。
+
+③ 到仓库 Actions 页确认 Release 工作流执行成功，Releases 页即可下载 vsix。
 
 ### 3. 注意事项
 
-<1> tag 名必须以 `v` 开头才会触发工作流。
+<1> tag 必须符合 `v<SemVer>` 格式（如 `v0.2.0`）；非法格式会在版本同步步骤直接失败。
 
-<2> 相同版本号不应重复打 tag;发布失败修复后应 bump 版本号再发。
+<2> 相同版本号不应重复打 tag；发布失败修复后应 bump 版本号再发。
 
 <3> 打包在干净环境进行，`packages/core` 会由工作流先构建，无需提交 `dist/` 产物。
 

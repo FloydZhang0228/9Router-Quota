@@ -26,8 +26,24 @@ jobs:
       - name: Build core package
         run: npm run build -w packages/core
 
+      # VSIX 版本来自扩展 package.json，而不是 Git tag。CI 在临时工作区把 v 后面的 SemVer
+      # 写进 manifest，不提交、不回推；因此 v0.2.0 永远产出 9router-quota-0.2.0.vsix。
+      - name: Sync extension version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release tag: $GITHUB_REF_NAME (expected v<semver>, e.g. v0.2.0)" >&2
+            exit 1
+          fi
+          npm version "$VERSION" --workspace=9router-quota --no-git-tag-version
+
       - name: Package vsix
-        run: cd packages/vscode-extension && npx @vscode/vsce package --no-dependencies
+        shell: bash
+        run: |
+          cd packages/vscode-extension
+          npx @vscode/vsce package --no-dependencies
+          test -f "9router-quota-${GITHUB_REF_NAME#v}.vsix"
 
       - name: Create GitHub Release and upload vsix
         uses: softprops/action-gh-release@v2
