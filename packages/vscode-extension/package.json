@@ -2,7 +2,7 @@
   "name": "9router-quota",
   "displayName": "9Router Quota",
   "description": "在 VSCode 底部面板查看 9Router 各 AI 账号的配额用量",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "engines": {
     "vscode": "^1.85.0"

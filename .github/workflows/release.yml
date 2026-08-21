@@ -21,6 +21,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # core 是 workspace 内部包，入口指向 dist/index.js；干净环境里必须先构建它，
+      # 否则扩展打包时解析不到 @9router-quota/core（本地因残留旧 dist 而侥幸通过）。
+      - name: Build core package
+        run: npm run build -w packages/core
+
       - name: Package vsix
         run: cd packages/vscode-extension && npx @vscode/vsce package --no-dependencies
 
