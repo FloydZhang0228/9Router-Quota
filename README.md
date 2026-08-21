@@ -1,14 +1,24 @@
 # 9Router Quota
 
-在 VSCode 里查看 [9Router](https://github.com/) 各 AI 账号配额用量的客户端扩展。
+在 VSCode 里查看 [9Router](https://github.com/decolua/9router) 各 AI 账号配额用量的客户端扩展。
 
 ## 一、工程简介
 
 ### 1. 项目背景
 
-9Router 是一个 AI 服务聚合网关，可接入 Claude、OpenAI、Gemini、DeepSeek 等多家供应商账号。本工程为其配套的配额监控客户端，当前提供 VSCode 扩展形态，方便在编辑器内实时掌握各账号的剩余配额与请求动态。
+9Router 是一个 AI 服务聚合网关，可接入 Claude、OpenAI、Gemini、DeepSeek 等多家供应商账号。本工程为其配套的配额监控客户端，当前提供 VSCode 扩展形态，方便在编辑器内实时掌握各账号的剩余配额与请求动态。9Router 服务端的部署请参考其官方仓库：[decolua/9router](https://github.com/decolua/9router)（含 Docker 一键部署与配置说明）。
 
-### 2. 功能特性
+### 2. 运行截图
+
+<1> 侧边栏面板（列表 / 圆环双视图 + 实时最近请求）：
+
+![侧边栏面板](docs/screenshot-sidebar.png)
+
+<2> 状态栏悬浮配额卡片（悬停右下角 `9R` 图标）：
+
+![状态栏悬浮卡片](docs/screenshot-tooltip.png)
+
+### 3. 功能特性
 
 <1> 活动栏侧边栏面板：分组卡片展示各账号配额，支持列表/圆环双视图切换。
 
@@ -22,7 +32,7 @@
 
 <6> 余额型配额直读：DeepSeek 等信用池类账号直接显示真实余额数字而非百分比。
 
-### 3. 目录结构
+### 4. 目录结构
 
 ```
 packages/
@@ -34,7 +44,7 @@ packages/
     .github/          （仓库级）CI 工作流：tag 触发自动打包发布。
 ```
 
-### 4. 技术栈
+### 5. 技术栈
 
 ① TypeScript + esbuild：core 与扩展均为 TS,esbuild 打包无框架依赖。
 
@@ -133,3 +143,59 @@ git push origin v<版本号>
 <2> 相同版本号不应重复打 tag;发布失败修复后应 bump 版本号再发。
 
 <3> 打包在干净环境进行，`packages/core` 会由工作流先构建，无需提交 `dist/` 产物。
+
+## 五、发布到 VSCode Marketplace
+
+### 1. 前置准备（一次性）
+
+① 访问 [Azure DevOps](https://dev.azure.com/) 注册账号，创建组织（免费）。
+
+② 在 Azure DevOps 的 User settings → Personal access tokens 页面新建 PAT：
+Scope 选择 **Custom defined → All accessible organizations**，Expiration 按需设置，创建后立即复制保存（只显示一次）。
+
+③ 访问 [Marketplace 发布管理页](https://marketplace.visualstudio.com/manage) ，用上述账号确认能进入管理界面。
+
+### 2. 手动发布
+
+① 安装发布工具（如尚未安装）：
+
+```bash
+npm install -g @vscode/vsce
+```
+
+② 登录（粘贴上面创建的 PAT）：
+
+```bash
+vsce login FloydZhang0228
+```
+
+③ 打包并发布（仓库根目录执行）：
+
+```bash
+npm run build
+cd packages/vscode-extension
+vsce publish
+```
+
+发布成功后，扩展出现在 `https://marketplace.visualstudio.com/items?itemName=FloydZhang0228.9router-quota`，用户可直接在 VSCode 扩展面板搜索 `9Router Quota` 安装。
+
+### 3. 通过 CI 自动发布（可选）
+
+① 在仓库 Settings → Secrets and variables → Actions 添加 Secret `VSCE_PAT`，值为第 1 步创建的 PAT。
+
+② 修改 `.github/workflows/release.yml`，在打包步骤之后加入：
+
+```yaml
+      - name: Publish to Marketplace
+        run: cd packages/vscode-extension && npx @vscode/vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
+```
+
+之后每次推 tag，除了产出 GitHub Release，还会同步把新版本推上市场。
+
+### 4. 发布要求清单
+
+<1> `package.json` 必须含 `publisher`、`repository`、`license` 字段（本仓库已配齐）。
+
+<2> 仓库根目录需有 `LICENSE` 文件（本仓库已含 MIT License）。
+
+<3> `packages/vscode-extension/.vscodeignore` 控制打包内容，避免把源码、CI 配置等打进 vsix（本仓库已配好）。

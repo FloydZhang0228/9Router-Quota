@@ -3,7 +3,13 @@
   "displayName": "9Router Quota",
   "description": "在 VSCode 底部面板查看 9Router 各 AI 账号的配额用量",
   "version": "0.1.1",
+  "publisher": "FloydZhang0228",
+  "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FloydZhang0228/9Router-Quota.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },

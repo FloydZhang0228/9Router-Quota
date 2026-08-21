@@ -262,8 +262,16 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
   }
 
   private renderHtml(webview: vscode.Webview): string {
-    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'app.js'));
-    const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'style.css'));
+    // Webview 会长期缓存同一路径的 JS/CSS，retainContextWhenHidden 又让旧 iframe 常驻；开发中修改
+    // 文件后经常出现“新 CSS + 旧 JS”混用（变量名对不上，进度条 width 回退 auto 撑满整条）。
+    // 扩展每次激活生成一次缓存戳，强制当前进程加载同一版本的两份资源。
+    const cacheBust = Date.now().toString();
+    const scriptUri = webview
+      .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'app.js'))
+      .with({ query: `v=${cacheBust}` });
+    const styleUri = webview
+      .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'style.css'))
+      .with({ query: `v=${cacheBust}` });
     const mediaUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media'));
     return `<!DOCTYPE html>
 <html lang="zh-CN">

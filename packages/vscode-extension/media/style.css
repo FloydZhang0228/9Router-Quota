@@ -61,8 +61,14 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   padding: 0;
 }
 .toolbar button:hover { background: var(--vscode-toolbar-hoverBackground); }
-/* ⟳ ⏻ 这两个字形本身笔画细、留白多，同样 13px 字号看着比 ☰◎◐ 小半号，单独加大字号找齐 */
-.toolbar #refresh, .toolbar #logout { font-size: 16px; }
+/*
+ * 每个 Unicode 字形自身的留白/粗细都不一样，同一字号在视觉上大小不一，只能逐个字形单独调整字号找齐。
+ * #logout 必须写够 (.toolbar .actions button#logout) 的选择器权重，否则会被上面
+ * ".actions button#logout" 那条 13px 规则压制——CSS 选择器权重高的规则永远赢，跟书写顺序无关，
+ * 权重不够时改字号的值完全不会生效（之前两次调整看起来"没反应"就是因为这个）。
+ */
+.toolbar #refresh { font-size: 15px; }
+.toolbar .actions button#logout { font-size: 16px; }
 .view-toggle[data-active="true"] {
   background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
   border-radius: 4px;
@@ -141,14 +147,21 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   font-size: 11px;
   white-space: nowrap;
 }
+/* 进度条：彩色填充长度与颜色都按剩余配额；其余半透明灰色代表已用。 */
 .quota-track {
   flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--vscode-scrollbarSlider-background);
+  height: 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(128, 128, 140, 0.35);
+  box-sizing: border-box;
   overflow: hidden;
+  background: rgba(128, 128, 140, 0.25);
 }
-.quota-fill { height: 100%; border-radius: 3px; background: var(--vscode-charts-green); }
+body[data-theme="light"] .quota-track { background: rgba(128, 128, 140, 0.2); }
+.quota-fill {
+  height: 100%;
+  background: var(--vscode-charts-green);
+}
 .quota-row[data-level="amber"] .quota-fill { background: var(--vscode-charts-yellow); }
 .quota-row[data-level="red"] .quota-fill { background: var(--vscode-charts-red); }
 .quota-percent { font-size: 11px; width: 3em; text-align: right; flex: none; }
@@ -165,38 +178,26 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   transition: background 0.15s;
 }
 .ring-card:hover { background: color-mix(in srgb, var(--vscode-input-background) 80%, transparent); }
-.ring {
-  --percent: 0;
-  width: 52px; height: 52px; border-radius: 50%;
-  background:
-    radial-gradient(closest-side, var(--vscode-input-background) 74%, transparent 75% 100%),
-    conic-gradient(from 210deg,
-      color-mix(in srgb, var(--vscode-charts-green) 60%, white) calc(var(--percent) * 1%),
-      color-mix(in srgb, var(--vscode-charts-green) 100%, black) calc(var(--percent) * 1% + 6%),
-      color-mix(in srgb, var(--vscode-scrollbarSlider-background) 65%, transparent) 0);
-  display: flex; align-items: center; justify-content: center;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+/*
+ * 圆环用 SVG stroke-dasharray/dashoffset 画，数值在 app.js 里按百分比精确算好——
+ * CSS conic-gradient 那条路线试了两版都在这个环境里没能正确渲染（色标顺序 bug，
+ * 换成双位置色标又整体不显示），SVG 描边是更可靠、没有歧义的标准做法。
+ */
+.ring { position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+.ring svg { position: absolute; inset: 0; transform: rotate(-90deg); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18)); }
+.ring-track { fill: none; stroke: rgba(128, 128, 140, 0.25); stroke-width: 4; }
+.ring-fill {
+  fill: none;
+  stroke: var(--vscode-charts-green);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s;
 }
-.ring[data-level="amber"] { background:
-    radial-gradient(closest-side, var(--vscode-input-background) 74%, transparent 75% 100%),
-    conic-gradient(from 210deg,
-      color-mix(in srgb, var(--vscode-charts-yellow) 60%, white) calc(var(--percent) * 1%),
-      var(--vscode-charts-yellow) calc(var(--percent) * 1% + 6%),
-      color-mix(in srgb, var(--vscode-scrollbarSlider-background) 65%, transparent) 0);
-}
-.ring[data-level="red"] { background:
-    radial-gradient(closest-side, var(--vscode-input-background) 74%, transparent 75% 100%),
-    conic-gradient(from 210deg,
-      color-mix(in srgb, var(--vscode-charts-red) 65%, white) calc(var(--percent) * 1%),
-      var(--vscode-charts-red) calc(var(--percent) * 1% + 6%),
-      color-mix(in srgb, var(--vscode-scrollbarSlider-background) 65%, transparent) 0);
-}
-.ring[data-level="none"] {
-  background: radial-gradient(closest-side, var(--vscode-input-background) 74%, transparent 75% 100%),
-    color-mix(in srgb, var(--vscode-scrollbarSlider-background) 65%, transparent);
-  filter: none;
-}
+.ring-fill[data-level="amber"] { stroke: var(--vscode-charts-yellow); }
+.ring-fill[data-level="red"] { stroke: var(--vscode-charts-red); }
+.ring-fill[data-level="none"] { stroke: transparent; }
 .ring-text {
+  position: relative;
   font-size: 11px; font-weight: 600; line-height: 1;
   padding: 0 2px; text-align: center;
 }

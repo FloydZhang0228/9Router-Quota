@@ -45,10 +45,11 @@ function remainingOf(q) {
   return Math.max(0, Math.min(100, 100 - q.percent));
 }
 
+/** 按剩余百分比配色：>=70 绿、31-69 黄、<=30 红。 */
 function levelOf(remaining) {
   if (remaining == null) return 'none';
-  if (remaining < 20) return 'red';
-  if (remaining < 50) return 'amber';
+  if (remaining <= 30) return 'red';
+  if (remaining < 70) return 'amber';
   return 'green';
 }
 
@@ -242,11 +243,14 @@ function renderQuotaRow(q) {
   const amount = amountText(q);
   const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
   const label = amount ?? (remaining != null ? remaining.toFixed(0) + '%' : null);
+  const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
   const right =
     q.unlimited && label == null
       ? '<span class="quota-percent">无限</span>'
-      : `<div class="quota-track"><div class="quota-fill" style="width:${(remaining ?? (amount != null ? 100 : 0)).toFixed(0)}%"></div></div>
-       <span class="quota-percent">${label ?? '—'}</span>`;
+      : `<div class="quota-track">
+           <div class="quota-fill" style="width:${percent}%"></div>
+         </div>
+         <span class="quota-percent">${label ?? '—'}</span>`;
   const meta = q.resetAt ? `<span class="quota-meta" title="${escapeHtml(q.description)}">↻ ${timeUntil(q.resetAt)}</span>` : '';
   return `
     <div class="quota-row" data-level="${level}">
@@ -256,15 +260,27 @@ function renderQuotaRow(q) {
     </div>`;
 }
 
+// SVG 描边环：数值由 JS 直接算好 dasharray/dashoffset，不依赖 CSS conic-gradient 色标
+// 的隐式排序规则（那条路线试了两版都在这个环境里渲染出问题），精确且没有歧义。
+const RING_RADIUS = 22;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
 function renderRing(q) {
   const remaining = remainingOf(q);
   const amount = amountText(q);
   const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
-  const percent = remaining ?? (amount != null ? 100 : 0);
+  const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
   const text = amount ?? (q.unlimited && remaining == null ? '∞' : remaining != null ? `${remaining.toFixed(0)}%` : '—');
+  // 彩色弧长 = 剩余比例；半透明轨道 = 已用。颜色也按剩余额度取档。
+  const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
   return `
     <div class="ring-card">
-      <div class="ring" data-level="${level}" style="--percent:${percent}">
+      <div class="ring">
+        <svg viewBox="0 0 52 52" width="52" height="52">
+          <circle class="ring-track" cx="26" cy="26" r="${RING_RADIUS}" />
+          <circle class="ring-fill" data-level="${level}" cx="26" cy="26" r="${RING_RADIUS}"
+            stroke-dasharray="${RING_CIRCUMFERENCE}" stroke-dashoffset="${offset}" />
+        </svg>
         <span class="ring-text">${text}</span>
       </div>
       <span class="ring-label">${escapeHtml(q.name)}</span>
