@@ -38,7 +38,15 @@
 
 <6> 余额型配额直读：DeepSeek 等信用池类账号直接显示真实余额数字而非百分比。
 
-### 4. 目录结构
+### 4. 配置与登录
+
+<1> 首次使用：打开 VSCode 左侧活动栏的 `9R` 图标，在面板中填入 9Router 服务地址（如 `http://9router.example.com`）与 Dashboard 密码。
+
+<2> 密码存储：密码仅保存在 VSCode 本地凭据库（SecretStorage），不同步、不明文落盘。
+
+<3> 服务地址也可通过设置项 `9routerQuota.baseUrl` 预先配置。
+
+### 5. 目录结构
 
 ```
 packages/
@@ -51,7 +59,7 @@ packages/
     .github/          （仓库级）CI 工作流：tag 触发自动打包发布。
 ```
 
-### 5. 技术栈
+### 6. 技术栈
 
 ① TypeScript + esbuild：core 与扩展均为 TS,esbuild 打包无框架依赖。
 
@@ -59,17 +67,15 @@ packages/
 
 ③ 原生 fetch + SSE:与 9Router 服务端交互零第三方 HTTP 库。
 
-## 二、安装部署
+## 二、本地编译打包
 
 ### 1. 前置条件
 
-<1> Node.js ≥ 20。
+<1> Node.js ≥ 20 及随附的 npm。
 
-<2> npm（随 Node 附带）。
+<2> 一个运行中的 9Router 服务实例及其 Dashboard 密码。
 
-<3> 一个运行中的 9Router 服务实例及其 Dashboard 密码。
-
-### 2. 安装步骤
+### 2. 安装与构建
 
 ① 安装依赖（仓库根目录执行）：
 
@@ -85,23 +91,11 @@ npm run build
 
 该命令依次执行：core 的 `tsc` 编译 → 扩展的 `esbuild` 打包。
 
-### 3. 扩展配置与登录
+### 3. 开发调试
 
-<1> 首次使用：打开 VSCode 左侧活动栏的 `9R` 图标，在面板中填入 9Router 服务地址（如 `http://9router.example.com`）与 Dashboard 密码。
+用 VSCode 打开 `packages/vscode-extension` 目录，按 F5 启动扩展开发宿主即可调试。
 
-<2> 密码存储：密码仅保存在 VSCode 本地凭据库（SecretStorage），不同步、不明文落盘。
-
-<3> 服务地址也可通过设置项 `9routerQuota.baseUrl` 预先配置。
-
-## 三、本地编译打包
-
-### 1. 开发调试
-
-① 在仓库根目录完成安装与构建（见二.2）。
-
-② 用 VSCode 打开 `packages/vscode-extension` 目录，按 F5 启动扩展开发宿主即可调试。
-
-### 2. 本地打包 vsix
+### 4. 本地打包 vsix
 
 ```bash
 cd packages/vscode-extension
@@ -110,7 +104,7 @@ npx @vscode/vsce package --no-dependencies
 
 产物为当前目录下的 `9router-quota-<版本号>.vsix`。
 
-### 3. 本地安装 vsix
+### 5. 本地安装 vsix
 
 ```bash
 code --install-extension 9router-quota-<版本号>.vsix
@@ -118,7 +112,7 @@ code --install-extension 9router-quota-<版本号>.vsix
 
 或在 VSCode 命令面板执行 `Extensions: Install from VSIX...` 选择文件。
 
-## 四、GitHub 上编译打包
+## 三、GitHub 上编译打包
 
 ### 1. 工作流说明
 
@@ -151,7 +145,7 @@ git push origin v<版本号>
 
 <3> 打包在干净环境进行，`packages/core` 会由工作流先构建，无需提交 `dist/` 产物。
 
-## 五、发布到 VSCode Marketplace
+## 四、发布到 VSCode Marketplace
 
 ### 1. 前置准备（一次性）
 
