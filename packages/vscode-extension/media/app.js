@@ -26,15 +26,12 @@ new MutationObserver(() => theme === 'system' && applyTheme()).observe(document.
   attributeFilter: ['class'],
 });
 
-// 官方 logo 素材，从 9Router 主站同款资源里挑出来的，路径由 extension.ts 通过 data-media 注入。
+// 目录由 extension.ts 通过 data-media 注入，文件名随账号数据下发（acc.logo，源头是 core 的
+// PROVIDERS 表）——这边不再自己判断哪个 provider 有图，免得两处清单分头维护漏掉新 provider。
 const MEDIA_BASE = root.dataset.media || '';
-const HAS_LOGO = new Set([
-  'claude', 'codex', 'antigravity', 'gemini-cli', 'github', 'deepseek', 'kiro', 'qoder', 'ollama',
-  'glm', 'glm-cn', 'minimax', 'minimax-cn', 'vercel-ai-gateway', 'codebuddy-cn', 'codebuddy-intl', 'grok-cli', 'kimi',
-]);
-function iconFor(provider, service) {
-  if (MEDIA_BASE && HAS_LOGO.has(provider)) {
-    return `<img src="${MEDIA_BASE}/providers/${provider}.png" alt="" />`;
+function iconFor(logo, service) {
+  if (MEDIA_BASE && logo) {
+    return `<img src="${MEDIA_BASE}/providers/${encodeURIComponent(logo)}" alt="" />`;
   }
   return `<span class="icon-fallback">${escapeHtml((service || '?')[0].toUpperCase())}</span>`;
 }
@@ -222,7 +219,7 @@ function renderAccount(acc, mode) {
   return `
     <div class="account">
       <div class="account-header">
-        <span class="account-icon">${iconFor(acc.provider, acc.service)}</span>
+        <span class="account-icon">${iconFor(acc.logo, acc.service)}</span>
         <span class="account-title">${escapeHtml(acc.service)}</span>${tier}
         <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">⟳</button>
         <span class="account-sub">${sub}</span>

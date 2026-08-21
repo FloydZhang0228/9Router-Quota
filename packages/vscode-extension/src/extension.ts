@@ -3,6 +3,7 @@ import {
   NineRouterClient,
   describeProvider,
   describeQuota,
+  providerLogo,
   quotaPercentUsed,
   type AccountQuota,
   type RecentRequest,
@@ -15,7 +16,7 @@ function getBaseUrl(): string {
 }
 
 function formatAccount({ connection, usage }: AccountQuota) {
-  const { service, company } = describeProvider(connection.provider);
+  const { service } = describeProvider(connection.provider);
   const account = connection.email || connection.displayName || connection.name || connection.id;
   const quotas = Object.entries(usage.quotas ?? {}).map(([key, quota]) => ({
     name: quota.displayName || quota.name || key,
@@ -34,7 +35,9 @@ function formatAccount({ connection, usage }: AccountQuota) {
     connection.provider === 'claude' || !usage.plan || usage.plan.toLowerCase() === service.toLowerCase()
       ? undefined
       : usage.plan;
-  return { id: connection.id, provider: connection.provider, service, company, account, plan, quotas };
+  // logo 文件名在这边按 PROVIDERS 表算好一起下发，webview 就不用再维护一份
+  // "哪些 provider 有图"的清单（那份手抄的 Set 跟 PROVIDERS 表两处都得改，漏一处就掉图）。
+  return { id: connection.id, service, account, plan, logo: providerLogo(connection.provider), quotas };
 }
 
 type RenderedAccount = ReturnType<typeof formatAccount>;
