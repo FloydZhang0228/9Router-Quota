@@ -168,7 +168,7 @@ function renderQuota() {
         <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">◎</button>
         <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${THEME_ICONS[theme]}</button>
         <button id="refresh" title="刷新全部">⟳</button>
-        <button id="logout" title="退出登录">⎋</button>
+        <button id="logout" title="退出登录">⏻</button>
       </div>
     </div>
     <div class="board board-${viewMode}">${body}</div>
@@ -208,13 +208,16 @@ function renderRecentFooter() {
 }
 
 function renderAccount(acc, mode) {
-  const sub = [acc.account, acc.plan].filter(Boolean).map(escapeHtml).join(' · ');
+  // Antigravity/Gemini 等订阅型账号的 plan（如 Plus/Pro）有真实档位意义，跟账号名一起挤在
+  // 右侧小字里容易看不见，升级为服务名旁的小徽标；Claude 那种假 plan 已在扩展主机过滤掉。
+  const tier = acc.plan ? `<span class="account-tier">${escapeHtml(acc.plan)}</span>` : '';
+  const sub = acc.account ? escapeHtml(acc.account) : '';
   const body = mode === 'grid' ? acc.quotas.map(renderRing).join('') : acc.quotas.map(renderQuotaRow).join('');
   return `
     <div class="account">
       <div class="account-header">
         <span class="account-icon">${iconFor(acc.provider, acc.service)}</span>
-        <span class="account-title">${escapeHtml(acc.service)}</span>
+        <span class="account-title">${escapeHtml(acc.service)}</span>${tier}
         <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">⟳</button>
         <span class="account-sub">${sub}</span>
       </div>
@@ -262,7 +265,7 @@ function renderRing(q) {
   return `
     <div class="ring-card">
       <div class="ring" data-level="${level}" style="--percent:${percent}">
-        <div class="ring-inner">${text}</div>
+        <span class="ring-text">${text}</span>
       </div>
       <span class="ring-label">${escapeHtml(q.name)}</span>
       ${q.resetAt ? `<span class="ring-meta">↻ ${timeUntil(q.resetAt)}</span>` : ''}

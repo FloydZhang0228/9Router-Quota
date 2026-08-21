@@ -27,7 +27,9 @@ button {
   background: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
   border: none;
-  padding: 4px 10px;
+  padding: 2px 6px;
+  line-height: 18px;
+  font-size: 13px;
   border-radius: 2px;
   cursor: pointer;
 }
@@ -46,28 +48,45 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   flex: none;
 }
 .toolbar .actions { display: flex; gap: 4px; align-items: center; }
-.toolbar button, .actions#logout {
+.toolbar button, .actions button#logout {
   background: transparent;
   color: var(--vscode-foreground);
   font-size: 13px;
-  padding: 2px 6px;
+  /* 固定的居中方块槽位，不同 Unicode 字形本身粗细/留白不一样，光靠统一 padding 兜不住视觉一致性 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
 }
 .toolbar button:hover { background: var(--vscode-toolbar-hoverBackground); }
+/* ⟳ ⏻ 这两个字形本身笔画细、留白多，同样 13px 字号看着比 ☰◎◐ 小半号，单独加大字号找齐 */
+.toolbar #refresh, .toolbar #logout { font-size: 16px; }
 .view-toggle[data-active="true"] {
   background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
   border-radius: 4px;
 }
 
-.board { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; }
+/* overflow-x 没写 —— CSS 规定跟非 visible 的 overflow-y 搭配时会被隐式算成 auto，
+   于是子元素一旦顶宽就会出现横向滚动条，宁可显式禁掉。 */
+.board { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 .board-list { flex-direction: column; }
 
 .account {
-  background: var(--vscode-input-background);
-  border: 1px solid var(--vscode-widget-border, transparent);
+  background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent);
   border-radius: 10px;
   padding: 10px 12px;
+  min-width: 0;
 }
-.board-grid .account { flex: 1 1 260px; }
+/*
+ * 圆环视图下账号卡片占满整行，圆环数按可用宽度自适应换行。
+ * min-width:0 是关键：flex item 默认 min-width:auto，宽度不会缩到比内容（这里是
+ * 未换行前 ring-row 的内容宽度）更窄——配额多的账号卡片就会被自己的圆环撑宽，
+ * 导致每个账号卡片宽度不一样（配额多的能挤两列，配额少的只能一列）。
+ */
+.board-grid .account { flex: 1 1 100%; min-width: 0; }
 .account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .account-icon { font-size: 14px; display: inline-flex; flex: none; }
 .account-icon img { width: 16px; height: 16px; object-fit: contain; border-radius: 3px; }
@@ -77,6 +96,16 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.account-tier {
+  flex: none;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 8px;
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 15px;
+  font-weight: 600;
 }
 .account-sub { margin-left: auto; min-width: 0; color: var(--vscode-descriptionForeground); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .account-refresh {
@@ -125,31 +154,59 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 .quota-percent { font-size: 11px; width: 3em; text-align: right; flex: none; }
 .quota-meta { color: var(--vscode-descriptionForeground); font-size: 11px; flex: none; }
 
-/* grid/ring view */
-.ring-row { display: flex; flex-wrap: wrap; gap: 12px; }
-.ring-card { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; }
+/* grid/ring view — 半透明小卡片 + 细环渐变，观感更精致 */
+.ring-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.ring-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  width: 82px; padding: 10px 6px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent);
+  transition: background 0.15s;
+}
+.ring-card:hover { background: color-mix(in srgb, var(--vscode-input-background) 80%, transparent); }
 .ring {
   --percent: 0;
-  width: 56px; height: 56px; border-radius: 50%;
-  background: conic-gradient(var(--vscode-charts-green) calc(var(--percent) * 1%), var(--vscode-scrollbarSlider-background) 0);
+  width: 52px; height: 52px; border-radius: 50%;
+  background:
+    radial-gradient(closest-side, var(--vscode-input-background) 74%, transparent 75% 100%),
+    conic-gradient(from 210deg,
+      color-mix(in srgb, var(--vscode-charts-green) 60%, white) calc(var(--percent) * 1%),
+      color-mix(in srgb, var(--vscode-charts-green) 100%, black) calc(var(--percent) * 1% + 6%),
+      color-mix(in srgb, var(--vscode-scrollbarSlider-background) 65%, transparent) 0);
   display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
 }
-.ring[data-level="amber"] { background: conic-gradient(var(--vscode-charts-yellow) calc(var(--percent) * 1%), var(--vscode-scrollbarSlider-background) 0); }
-.ring[data-level="red"] { background: conic-gradient(var(--vscode-charts-red) calc(var(--percent) * 1%), var(--vscode-scrollbarSlider-background) 0); }
-.ring[data-level="none"] { background: var(--vscode-scrollbarSlider-background); }
-.ring-inner {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: var(--vscode-input-background);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 600;
+.ring[data-level="amber"] { background:
+    radial-gradient(closest-side, var(--vscode-input-background) 74%, transparent 75% 100%),
+    conic-gradient(from 210deg,
+      color-mix(in srgb, var(--vscode-charts-yellow) 60%, white) calc(var(--percent) * 1%),
+      var(--vscode-charts-yellow) calc(var(--percent) * 1% + 6%),
+      color-mix(in srgb, var(--vscode-scrollbarSlider-background) 65%, transparent) 0);
+}
+.ring[data-level="red"] { background:
+    radial-gradient(closest-side, var(--vscode-input-background) 74%, transparent 75% 100%),
+    conic-gradient(from 210deg,
+      color-mix(in srgb, var(--vscode-charts-red) 65%, white) calc(var(--percent) * 1%),
+      var(--vscode-charts-red) calc(var(--percent) * 1% + 6%),
+      color-mix(in srgb, var(--vscode-scrollbarSlider-background) 65%, transparent) 0);
+}
+.ring[data-level="none"] {
+  background: radial-gradient(closest-side, var(--vscode-input-background) 74%, transparent 75% 100%),
+    color-mix(in srgb, var(--vscode-scrollbarSlider-background) 65%, transparent);
+  filter: none;
+}
+.ring-text {
+  font-size: 11px; font-weight: 600; line-height: 1;
+  padding: 0 2px; text-align: center;
 }
 .ring-label {
   font-size: 10px; text-align: center; color: var(--vscode-descriptionForeground);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 64px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 72px;
 }
 .ring-meta {
   font-size: 9px; text-align: center; color: var(--vscode-descriptionForeground);
-  opacity: 0.8; white-space: nowrap;
+  opacity: 0.75; white-space: nowrap;
 }
 
 /* 主题强制覆盖：跟随系统时按 body 上的 vscode-dark/vscode-light class 解析成下面两套之一 */

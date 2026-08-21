@@ -9,6 +9,7 @@
   },
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
+  "icon": "media/icon.png",
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -23,11 +24,6 @@
     "views": {
       "nineRouterQuota": [
         { "type": "webview", "id": "9router-quota.view", "name": "", "retainContextWhenHidden": true }
-      ]
-    },
-    "menus": {
-      "view/title": [
-        { "command": "9router-quota.refresh", "when": "view == 9router-quota.view", "group": "navigation" }
       ]
     },
     "configuration": {

@@ -26,9 +26,14 @@ function formatAccount({ connection, usage }: AccountQuota) {
     used: quota.used,
     total: quota.total,
   }));
-  // Claude 消费者 OAuth 通道的 plan 字段服务端写死成 "Claude Code"，不是真实档位（分不出 Pro/Max），
-  // 展示出来纯属误导，直接不显示；9Router 的 usage API 目前也没有暴露真实档位数据。
-  const plan = connection.provider === 'claude' ? undefined : usage.plan;
+  // 两类假 plan 都过滤掉：① Claude 消费者 OAuth 通道服务端写死成字符串 "Claude Code"；
+  // ② Antigravity 等账号在拿不到真实订阅档位时，服务端回退成跟服务名一样的占位字符串
+  // （比如 plan 就是 "Antigravity"），不是没取到 Plus/Pro，是上游确实没有这个数据、
+  // 给了个没有信息量的兜底值——原样展示只是把服务名重复一遍，不如不显示。
+  const plan =
+    connection.provider === 'claude' || !usage.plan || usage.plan.toLowerCase() === service.toLowerCase()
+      ? undefined
+      : usage.plan;
   return { id: connection.id, provider: connection.provider, service, company, account, plan, quotas };
 }
 
@@ -102,6 +107,12 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
   // 缓存住，等真有 webview 了（或者 webview 报 ready）主动补发一次。
   private lastLogs: RecentRequest[] = [];
   private logsLoaded = false;
+  // 启动时 activate / resolveWebviewView / webview ready 三处几乎同时调 refresh()，
+  // 并发打上游配额接口容易被限流，慢的那次拿到的残缺列表（部分账号拉取失败被过滤）
+  // 可能后到并覆盖完整列表——表现为“只显示几个账号，手动刷新才恢复”。
+  // refreshSeq 保证只有最新一次发起的响应才有资格渲染。
+  private refreshSeq = 0;
+  private refreshDebounce?: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -118,7 +129,19 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
       this.stopRecentStream?.();
       this.stopRecentStream = undefined;
     });
-    this.refresh();
+    this.requestRefresh();
+  }
+
+  /**
+   * 插件启动时 activate() / resolveWebviewView() / webview「ready」三处会在几百毫秒内
+   * 各触发一次刷新意图——不去抖的话就是三个并发 refresh() 同时打上游，互相抢限流，
+   * 谁最后跑完就用谁的（可能是被限流出来的残缺列表）覆盖显示，正是“账号显示不全，
+   * 手动刷新才恢复”的成因。这里把这类隐式触发合并成一次；用户主动点刷新/提交登录
+   * 不走这条路径，仍然立即执行。
+   */
+  requestRefresh(): void {
+    clearTimeout(this.refreshDebounce);
+    this.refreshDebounce = setTimeout(() => this.refresh(), 300);
   }
 
   /**
@@ -126,6 +149,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
    * 所以这里不再要求 this.view 存在，只在真有面板时才顺手 postMessage 过去。
    */
   async refresh(): Promise<void> {
+    const seq = ++this.refreshSeq;
     const baseUrl = getBaseUrl();
     const password = await this.secrets.get(SECRET_KEY);
     if (!baseUrl || !password) {
@@ -141,11 +165,13 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
       // “最近请求”页脚不该被它拖着一起等。
       this.ensureRecentStream(client);
       const accounts = await client.fetchAllQuotas();
+      if (seq !== this.refreshSeq) return; // 已有更新的刷新在跑，丢弃这次过期结果
       const rendered = accounts.map(formatAccount);
       this.lastRendered = rendered;
       this.onAccountsChange?.(rendered);
       this.view?.webview.postMessage({ type: 'quota', accounts: rendered, updatedAt: Date.now() });
     } catch (err) {
+      if (seq !== this.refreshSeq) return;
       this.view?.webview.postMessage({
         type: 'error',
         message: err instanceof Error ? err.message : String(err),
@@ -230,7 +256,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
         // webview 脚本刚跑起来时来报个到：resolveWebviewView 里那次 refresh() 可能因为
         // 时序问题（iframe 还没就绪就 postMessage）被吞掉，这里再兜底发一次，不会白屏。
         this.pushCachedLogs();
-        await this.refresh();
+        this.requestRefresh();
         break;
     }
   }
@@ -273,7 +299,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // 状态栏 tooltip 得自己有数据来源，不能靠用户先点开侧边栏才触发；顺手加个定时刷新，
   // 保持"Live"——但周期别太短，配额接口要挨个打每个 provider，没必要天天扰民。
-  provider.refresh();
+  provider.requestRefresh();
   const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
   const refreshTimer = setInterval(() => provider.refresh(), REFRESH_INTERVAL_MS);
   context.subscriptions.push({ dispose: () => clearInterval(refreshTimer) });
