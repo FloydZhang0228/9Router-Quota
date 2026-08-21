@@ -22,7 +22,7 @@
     },
     "views": {
       "nineRouterQuota": [
-        { "type": "webview", "id": "9router-quota.view", "name": "" }
+        { "type": "webview", "id": "9router-quota.view", "name": "", "retainContextWhenHidden": true }
       ]
     },
     "menus": {

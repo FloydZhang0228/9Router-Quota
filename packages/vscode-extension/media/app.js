@@ -52,12 +52,18 @@ function levelOf(remaining) {
   return 'green';
 }
 
-function shortTime(iso) {
-  if (!iso) return '';
+/** 还剩多久重置，比绝对日期直观（"5h0m 后" 而不是 "08/21 15:52"）。 */
+function timeUntil(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const diff = Math.floor((d.getTime() - Date.now()) / 1000);
+  if (diff <= 0) return '已重置';
+  const days = Math.floor(diff / 86400);
+  const hours = Math.floor((diff % 86400) / 3600);
+  const mins = Math.floor((diff % 3600) / 60);
+  if (days > 0) return `${days}d${hours}h`;
+  if (hours > 0) return `${hours}h${mins}m`;
+  return `${mins}m`;
 }
 
 function timeAgo(iso) {
@@ -94,6 +100,9 @@ window.addEventListener('message', (event) => {
     else if (lastAccounts) renderQuota();
   } else if (msg.type === 'error') renderError(msg.message);
 });
+// 告诉扩展主机"脚本已经跑起来了，消息监听器就位"——resolveWebviewView 里那次 refresh()
+// 如果因为时序问题（webview 还没跑完脚本就 postMessage）被吞掉，靠这个兜底重新拿一次数据。
+vscode.postMessage({ type: 'ready' });
 setInterval(() => {
   const el = document.getElementById('recent-footer');
   if (el && lastLogs.length) el.innerHTML = footerRows(lastLogs);
@@ -235,7 +244,7 @@ function renderQuotaRow(q) {
       ? '<span class="quota-percent">无限</span>'
       : `<div class="quota-track"><div class="quota-fill" style="width:${(remaining ?? (amount != null ? 100 : 0)).toFixed(0)}%"></div></div>
        <span class="quota-percent">${label ?? '—'}</span>`;
-  const meta = q.resetAt ? `<span class="quota-meta" title="${escapeHtml(q.description)}">↻ ${shortTime(q.resetAt)}</span>` : '';
+  const meta = q.resetAt ? `<span class="quota-meta" title="${escapeHtml(q.description)}">↻ ${timeUntil(q.resetAt)}</span>` : '';
   return `
     <div class="quota-row" data-level="${level}">
       <span class="quota-pill">${escapeHtml(q.name)}</span>
@@ -256,7 +265,7 @@ function renderRing(q) {
         <div class="ring-inner">${text}</div>
       </div>
       <span class="ring-label">${escapeHtml(q.name)}</span>
-      ${q.resetAt ? `<span class="ring-meta">↻ ${shortTime(q.resetAt)}</span>` : ''}
+      ${q.resetAt ? `<span class="ring-meta">↻ ${timeUntil(q.resetAt)}</span>` : ''}
     </div>`;
 }
 
