@@ -10,13 +10,17 @@
 
 ### 2. 运行截图
 
-<1> 侧边栏面板（列表 / 圆环双视图 + 实时最近请求）：
+<1> 侧边栏面板 · 列表视图（进度条 + 剩余百分比 + 重置倒计时，底部为实时最近请求）：
 
-![侧边栏面板](docs/screenshot-sidebar.png)
+<img src="docs/screenshot-list.png" alt="列表视图" width="340" />
 
-<2> 状态栏悬浮配额卡片（悬停右下角 `9R` 图标）：
+<2> 侧边栏面板 · 圆环视图（同一份数据的紧凑排布，适合账号配额条目较多时速览）：
 
-![状态栏悬浮卡片](docs/screenshot-tooltip.png)
+<img src="docs/screenshot-ring.png" alt="圆环视图" width="340" />
+
+<3> 状态栏悬浮配额卡片（悬停右下角 `9R` 图标）：
+
+<img src="docs/screenshot-tooltip.png" alt="状态栏悬浮卡片" width="360" />
 
 ### 3. 功能特性
 
