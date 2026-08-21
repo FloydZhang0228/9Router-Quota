@@ -244,12 +244,12 @@ function renderQuotaRow(q) {
   const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
   const label = amount ?? (remaining != null ? remaining.toFixed(0) + '%' : null);
   const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
+  const color = level === 'red' ? 'var(--vscode-charts-red)' : level === 'amber' ? 'var(--vscode-charts-yellow)' : 'var(--vscode-charts-green)';
+  const track = `linear-gradient(to right, ${color} 0%, ${color} ${percent}%, rgba(128,128,140,.25) ${percent}%, rgba(128,128,140,.25) 100%)`;
   const right =
     q.unlimited && label == null
       ? '<span class="quota-percent">无限</span>'
-      : `<div class="quota-track">
-           <div class="quota-fill" style="width:${percent}%"></div>
-         </div>
+      : `<div class="quota-track" style="background:${track}"></div>
          <span class="quota-percent">${label ?? '—'}</span>`;
   const meta = q.resetAt ? `<span class="quota-meta" title="${escapeHtml(q.description)}">↻ ${timeUntil(q.resetAt)}</span>` : '';
   return `

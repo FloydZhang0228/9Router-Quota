@@ -77,7 +77,9 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 /* overflow-x 没写 —— CSS 规定跟非 visible 的 overflow-y 搭配时会被隐式算成 auto，
    于是子元素一旦顶宽就会出现横向滚动条，宁可显式禁掉。 */
 .board { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
-.board-list { flex-direction: column; }
+/* 列方向仍继承 flex-wrap:wrap 时，高度不足会横向开第二列，provider 就会并排。 */
+.board-list { flex-direction: column; flex-wrap: nowrap; width: 100%; }
+.board-list .account { flex: none; width: 100%; box-sizing: border-box; }
 
 .account {
   background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
@@ -147,7 +149,7 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   font-size: 11px;
   white-space: nowrap;
 }
-/* 进度条：彩色填充长度与颜色都按剩余配额；其余半透明灰色代表已用。 */
+/* 单层硬切分渐变由 app.js 内联：彩色段=剩余，半透明灰段=已用。 */
 .quota-track {
   flex: 1;
   height: 8px;
@@ -155,20 +157,12 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   border: 1px solid rgba(128, 128, 140, 0.35);
   box-sizing: border-box;
   overflow: hidden;
-  background: rgba(128, 128, 140, 0.25);
 }
-body[data-theme="light"] .quota-track { background: rgba(128, 128, 140, 0.2); }
-.quota-fill {
-  height: 100%;
-  background: var(--vscode-charts-green);
-}
-.quota-row[data-level="amber"] .quota-fill { background: var(--vscode-charts-yellow); }
-.quota-row[data-level="red"] .quota-fill { background: var(--vscode-charts-red); }
 .quota-percent { font-size: 11px; width: 3em; text-align: right; flex: none; }
 .quota-meta { color: var(--vscode-descriptionForeground); font-size: 11px; flex: none; }
 
 /* grid/ring view — 半透明小卡片 + 细环渐变，观感更精致 */
-.ring-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.ring-row { display: flex; flex-wrap: wrap; gap: 3px; }
 .ring-card {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   width: 82px; padding: 10px 6px 8px;

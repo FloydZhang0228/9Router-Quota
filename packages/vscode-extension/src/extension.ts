@@ -277,7 +277,10 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src ${webview.cspSource}; img-src ${webview.cspSource};" />
+<!-- style-src 必须带 'unsafe-inline'：进度条长度/颜色是逐条算出来的内联 style 属性，
+     没有它整条 CSP 会静默丢弃，进度条只剩空轨道。style 属性无法用 nonce 放行。
+     default-src/img-src 仍锁死在 cspSource，CSS 里 url() 之类的外发依然进不去。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource}; img-src ${webview.cspSource};" />
 <link rel="stylesheet" href="${styleUri}" />
 </head>
 <body>
