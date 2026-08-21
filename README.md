@@ -99,10 +99,12 @@ npm run build
 
 ```bash
 cd packages/vscode-extension
-npx @vscode/vsce package --no-dependencies
+npm run package
 ```
 
 产物为当前目录下的 `9router-quota-<版本号>.vsix`。
+
+不要直接调 `vsce package`：该脚本会先把 README 里的截图内联成 data URI 生成 `README.packaged.md`，并带上 `--readme-path` 与 `--no-rewrite-relative-links`。少了这几步，vsce 会把图片相对路径重写成 `https://github.com/<repo>/raw/HEAD/...`（私有仓库匿名 404，且按仓库根解析路径也不对），扩展详情页的截图会全部裂图。
 
 ### 5. 本地安装 vsix
 

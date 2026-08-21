@@ -6,3 +6,7 @@ src/**
 node_modules/**
 esbuild.js
 tsconfig.json
+# 打包用的是 esbuild.js 生成的 README.packaged.md（截图已内联成 data URI，见那里的注释），
+# 源 README 和图片文件不必再进包。
+README.md
+images/**

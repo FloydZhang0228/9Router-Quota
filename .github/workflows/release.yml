@@ -38,11 +38,15 @@ jobs:
           fi
           npm version "$VERSION" --workspace=9router-quota --no-git-tag-version
 
+      # 走 npm run package 而不是直接调 vsce：那个脚本会先生成截图内联成 data URI 的
+      # README.packaged.md，并带上 --readme-path / --no-rewrite-relative-links
+      # （原因见 esbuild.js 里 buildPackagedReadme 的注释）。直接调 vsce 打出来的包，
+      # 扩展详情页的截图会全部裂图。
       - name: Package vsix
         shell: bash
         run: |
           cd packages/vscode-extension
-          npx @vscode/vsce package --no-dependencies
+          npm run package
           test -f "9router-quota-${GITHUB_REF_NAME#v}.vsix"
 
       - name: Create GitHub Release and upload vsix

@@ -47,6 +47,7 @@
     "compile": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "vscode:prepublish": "node esbuild.js --production",
+    "package": "node esbuild.js --production && npx @vscode/vsce package --no-dependencies --readme-path README.packaged.md --no-rewrite-relative-links",
     "typecheck": "tsc -p . --noEmit"
   },
   "dependencies": {

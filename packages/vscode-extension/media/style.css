@@ -86,7 +86,7 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
   border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 10px 4px;
   min-width: 0;
 }
 /*
@@ -141,28 +141,46 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 .quota-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 4px 0;
 }
+/* 字号压到 7px：Antigravity 这类账号的模型名很长（"Claude Sonnet 4.6 (Thinking)"），
+   pill 撑宽后进度条被挤到只剩一小截，缩字号是把宽度还给进度条最直接的办法。 */
 .quota-pill {
   background: var(--vscode-badge-background);
   color: var(--vscode-badge-foreground);
   border-radius: 10px;
-  padding: 1px 8px;
-  font-size: 11px;
+  padding: 1px 6px;
+  font-size: 7px;
   white-space: nowrap;
 }
-/* 单层硬切分渐变由 app.js 内联：彩色段=剩余，半透明灰段=已用。 */
+/*
+ * 单层硬切分渐变由 app.js 内联：彩色段=剩余，半透明灰段=已用。
+ * 不用 border 画边框——box-sizing:border-box 下 1px 边框会吃掉内容高度，剩余 100%
+ * 的行整条被彩色盖住、边框看不见，视觉上就比没填满的行更粗（行与行高度不一致的成因）。
+ * 改成 inset 阴影：不占布局高度，每行都是实打实的 6px。
+ */
 .quota-track {
   flex: 1;
-  height: 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(128, 128, 140, 0.35);
-  box-sizing: border-box;
+  height: 6px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 140, 0.3);
   overflow: hidden;
 }
-.quota-percent { font-size: 11px; width: 3em; text-align: right; flex: none; }
-.quota-meta { color: var(--vscode-descriptionForeground); font-size: 11px; flex: none; }
+/*
+ * 百分比与重置时间紧贴成一组，整组顶到卡片右边界。
+ * meta 不能定宽：时间文本长短不一（"4d5h" 4 字符 / "6d19h" 5 字符），定宽后短的那种
+ * 必然在盒子里空出一个字符位——左对齐空在右边（顶不到边界），右对齐空在左边（跟百分比
+ * 拉开）。改成随内容伸缩，短文本自己就贴住右边界；代价是各行进度条右端会差一个字符宽，
+ * 比留缝可接受。percent 仍定宽，保证 "49%" 和 "100%" 的右缘对齐。
+ */
+.quota-percent { font-size: 11px; width: 2.6em; text-align: right; flex: none; margin-right: -2px; }
+.quota-meta {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  flex: none;
+  white-space: nowrap;
+}
 
 /* grid/ring view — 半透明小卡片 + 细环渐变，观感更精致 */
 .ring-row { display: flex; flex-wrap: wrap; gap: 3px; }

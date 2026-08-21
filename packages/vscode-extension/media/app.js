@@ -258,7 +258,7 @@ function renderQuotaRow(q) {
       ? '<span class="quota-percent">无限</span>'
       : `<div class="quota-track" style="background:${track}"></div>
          <span class="quota-percent">${label ?? '—'}</span>`;
-  const meta = q.resetAt ? `<span class="quota-meta" title="${escapeHtml(q.description)}">↻ ${timeUntil(q.resetAt)}</span>` : '';
+  const meta = q.resetAt ? `<span class="quota-meta" title="${escapeHtml(q.description)}">${timeUntil(q.resetAt)}</span>` : '';
   return `
     <div class="quota-row" data-level="${level}">
       <span class="quota-pill">${escapeHtml(q.name)}</span>
@@ -291,7 +291,7 @@ function renderRing(q) {
         <span class="ring-text">${text}</span>
       </div>
       <span class="ring-label">${escapeHtml(q.name)}</span>
-      ${q.resetAt ? `<span class="ring-meta">↻ ${timeUntil(q.resetAt)}</span>` : ''}
+      ${q.resetAt ? `<span class="ring-meta">${timeUntil(q.resetAt)}</span>` : ''}
     </div>`;
 }
 
