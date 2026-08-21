@@ -1,11 +1,10 @@
 {
   "name": "9router-quota",
   "displayName": "9Router Quota",
-  "description": "在 VSCode 底部面板查看 9Router 各 AI 账号的配额用量",
+  "description": "在 VSCode 侧边栏查看 9Router 各 AI 账号的配额用量",
   "version": "0.1.1",
   "publisher": "FloydZhang0228",
   "license": "MIT",
-  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/FloydZhang0228/9Router-Quota.git"
@@ -14,6 +13,7 @@
     "vscode": "^1.85.0"
   },
   "categories": ["Other"],
+  "keywords": ["9router", "quota", "usage", "claude", "配额"],
   "activationEvents": ["onStartupFinished"],
   "icon": "media/icon.png",
   "main": "./dist/extension.js",
