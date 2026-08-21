@@ -2,22 +2,24 @@
 
 在 VSCode 里查看 [9Router](https://github.com/decolua/9router) 各 AI 账号配额用量的客户端扩展。支持 Claude、OpenAI、Gemini、DeepSeek、GLM、Kimi 等 19 家供应商。
 
-<!-- 图片走仓库内相对路径，随 vsix 一起打包（见 .vscodeignore 未排除 images/）。
-     不用 raw.githubusercontent.com 绝对地址：本仓库是私有的，匿名请求一律 404，
-     市场页面的渲染器拿不到图。 -->
+<!-- 必须用 Markdown 的 ![]() 语法：扩展详情页是个 webview，只有 markdown-it 的
+     image 规则会把相对路径改写成可加载的资源 URI，原生 <img src> 会被原样透传、
+     加载失败显示裂图。也因此无法用 width 属性限宽，图片已按展示尺寸(450px 宽)存盘。
+     图片走仓库内相对路径随 vsix 一起打包，不用 raw.githubusercontent.com 绝对地址
+     （本仓库私有，匿名请求一律 404）。 -->
 ## 运行截图
 
 侧边栏面板 · 列表视图（进度条 + 剩余百分比 + 重置倒计时，底部为实时最近请求）：
 
-<img src="images/screenshot-list.png" alt="列表视图" width="340" />
+![列表视图](images/screenshot-list.png)
 
 侧边栏面板 · 圆环视图（同一份数据的紧凑排布，适合配额条目较多时速览）：
 
-<img src="images/screenshot-ring.png" alt="圆环视图" width="340" />
+![圆环视图](images/screenshot-ring.png)
 
 状态栏悬浮配额卡片（悬停右下角 `9R` 图标）：
 
-<img src="images/screenshot-tooltip.png" alt="状态栏悬浮卡片" width="360" />
+![状态栏悬浮卡片](images/screenshot-tooltip.png)
 
 ## 功能特性
 

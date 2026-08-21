@@ -154,6 +154,9 @@ function cycleTheme() {
 
 function renderQuota() {
   if (!lastAccounts) return;
+  // 整页重绘会连带销毁 .board 那个滚动容器，滚动位置跟着归零——单账号刷新、刷新全部、
+  // 切视图/主题都走这里，用户翻到下面的账号时随便碰一下就被弹回顶部。先存后还。
+  const scrollTop = document.querySelector('.board')?.scrollTop ?? 0;
   const time = new Date(lastUpdatedAt).toLocaleTimeString('zh-CN', { hour12: false });
   const body = lastAccounts.length
     ? lastAccounts.map((acc) => renderAccount(acc, viewMode)).join('')
@@ -187,6 +190,8 @@ function renderQuota() {
       vscode.postMessage({ type: 'refreshAccount', connectionId: btn.dataset.id });
     })
   );
+  const board = document.querySelector('.board');
+  if (board) board.scrollTop = scrollTop;
 }
 
 function footerRows(logs) {
