@@ -42,7 +42,9 @@ interface LogRow {
  * JS 算出来的动态像素，同样必须是绝对值。放在整个脚本最前面，赶在 Chrome 量 popup 尺寸之前。
  */
 (function sizePopup(): void {
-  const width = Math.max(300, Math.min(Math.round(screen.width / 5), 800));
+  // 420px 地板：屏幕宽度 / 5 在常见 1920px 屏幕上只有 384px，配额行（模型名 pill + 进度条 +
+  // 百分比）在这个宽度下会被挤到裁切——地板保证至少有一列 340px 卡片的呼吸空间。
+  const width = Math.max(420, Math.min(Math.round(screen.width / 5), 800));
   const height = Math.min(screen.availHeight, 600);
   for (const el of [document.documentElement, document.body]) {
     el.style.width = `${width}px`;
