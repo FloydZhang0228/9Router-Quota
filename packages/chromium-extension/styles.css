@@ -25,10 +25,16 @@
   --vscode-charts-yellow: #f0d264;
   --vscode-charts-red: #ef5f5f;
 }
-/* popup 宽度尽量撑满（右缘贴近浏览器右边界），上限防超宽屏太夸张；高度固定防截断 */
-html, body { min-width: 380px; max-width: 560px; height: 520px; }
-
-html, body { height: 100%; }
+/*
+ * popup 尺寸必须写死像素，且只能写一次。
+ * Chrome 对 popup 的硬上限是 800x600（没有 API 能突破，也无法跟随浏览器窗口宽度自适应），
+ * 这里顶到上限内的安全值，账号多时一屏能装下更多。
+ * 之前这里还跟着一条 html,body{height:100%}，把 520px 覆盖成了百分比：html 高度取自视口、
+ * 视口高度又由文档内容撑出，两者互相依赖；body 的 overflow:hidden 再把溢出裁掉，Chrome
+ * 就完全量不出该开多高。窗口一矮，.board（flex:1）先被压成 0，只剩 flex:none 的工具栏和
+ * 页脚——"第二次打开看不到进度条/圆环"就是这么来的（首次打开测到的高度靠时序侥幸)。
+ */
+html, body { width: 780px; height: 580px; }
 body {
   font-family: var(--vscode-font-family);
   color: var(--vscode-foreground);
@@ -108,9 +114,15 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 /* overflow-x 没写 —— CSS 规定跟非 visible 的 overflow-y 搭配时会被隐式算成 auto，
    于是子元素一旦顶宽就会出现横向滚动条，宁可显式禁掉。 */
 .board { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
-/* 列方向仍继承 flex-wrap:wrap 时，高度不足会横向开第二列，provider 就会并排。 */
-.board-list { flex-direction: column; flex-wrap: nowrap; width: 100%; }
-.board-list .account { flex: none; width: 100%; box-sizing: border-box; }
+/* popup 有 780px 可用（远宽于 VSCode 侧边栏），列表视图按宽度自动分栏，
+   账号多时不用一直往下滚。auto-fill + minmax 由浏览器算列数，不需要 JS 参与。 */
+.board-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  align-content: start;
+  gap: 8px 10px;
+}
+.board-list .account { width: auto; box-sizing: border-box; }
 
 .account {
   background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
@@ -174,14 +186,14 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   gap: 6px;
   padding: 4px 0;
 }
-/* 字号压到 7px：Antigravity 这类账号的模型名很长（"Claude Sonnet 4.6 (Thinking)"），
-   pill 撑宽后进度条被挤到只剩一小截，缩字号是把宽度还给进度条最直接的办法。 */
+/* VSCode 侧边栏那边压到 7px 是被宽度逼的；popup 每列有 340px，长模型名也放得下，
+   恢复到能正常阅读的字号。 */
 .quota-pill {
   background: var(--vscode-badge-background);
   color: var(--vscode-badge-foreground);
   border-radius: 10px;
   padding: 1px 6px;
-  font-size: 7px;
+  font-size: 10px;
   white-space: nowrap;
 }
 /*

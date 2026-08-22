@@ -254,8 +254,17 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
         await this.logout();
         break;
       case 'ready':
-        // webview 脚本刚跑起来时来报个到：resolveWebviewView 里那次 refresh() 可能因为
-        // 时序问题（iframe 还没就绪就 postMessage）被吞掉，这里再兜底发一次，不会白屏。
+        // webview 脚本刚跑起来时来报个到：resolveWebviewView 里那次 postMessage 可能因为
+        // 时序问题（iframe 还没就绪、监听器未挂上）被吞掉。账号数据也必须在这里补发——
+        // 否则切回侧栏时只能干等一次完整上游刷新（数秒），期间就是空白面板；
+        // 这正是"切走再切回来变空"的残余成因。有缓存先画旧画面，刷新回来无感替换。
+        if (this.lastRendered.length) {
+          this.view?.webview.postMessage({
+            type: 'quota',
+            accounts: this.lastRendered,
+            updatedAt: this.lastUpdatedAt ?? 0,
+          });
+        }
         this.pushCachedLogs();
         this.requestRefresh();
         break;
