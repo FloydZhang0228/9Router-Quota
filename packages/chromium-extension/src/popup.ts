@@ -115,14 +115,25 @@ setInterval(() => {
 
 function renderLogin(baseUrl: string): void {
   root.innerHTML = `
-    <form id="login-form" class="login">
-      <label>9Router 地址</label>
-      <input name="baseUrl" type="text" placeholder="http://9router.example.com" value="${escapeHtml(baseUrl)}" required />
-      <label>Dashboard 密码</label>
-      <input name="password" type="password" required />
-      <button type="submit">登录</button>
-      <p class="hint">地址 http / https 均可。密码保存在浏览器扩展的本地存储中，不会同步到云端。</p>
-    </form>`;
+    <div class="login-screen">
+      <div class="login-card">
+        <div class="login-logo">9</div>
+        <h1 class="login-title">9Router Quota</h1>
+        <p class="login-subtitle">连接你的 9Router 服务，查看各账号的实时配额</p>
+        <form id="login-form">
+          <label class="login-field">
+            <span class="login-label">9Router 地址</span>
+            <input name="baseUrl" type="text" placeholder="http://9router.example.com" value="${escapeHtml(baseUrl)}" required />
+          </label>
+          <label class="login-field">
+            <span class="login-label">Dashboard 密码</span>
+            <input name="password" type="password" required />
+          </label>
+          <button type="submit" class="login-submit">登录</button>
+        </form>
+        <p class="login-hint">地址 http / https 均可。密码保存在浏览器扩展的本地存储中，不会同步到云端。</p>
+      </div>
+    </div>`;
   document.getElementById('login-form')!.addEventListener('submit', (e) => {
     e.preventDefault();
     const form = new FormData(e.target as HTMLFormElement);

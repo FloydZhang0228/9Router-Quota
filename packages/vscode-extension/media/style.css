@@ -13,16 +13,58 @@ body {
 /* 面板整体是个 app-shell：工具栏/页脚固定，中间账号列表自己滚动，页脚才能真正贴底 */
 #root { display: flex; flex-direction: column; height: 100%; }
 
-.login { display: flex; flex-direction: column; gap: 6px; }
-.login label { font-size: 11px; color: var(--vscode-descriptionForeground); }
-.login input {
+/*
+ * 登录页——原来是裸的 label+input+button 堆叠在面板顶部，没有品牌标识，下面大片空白，
+ * 看着像没做完的表单。改成居中卡片 + logo 徽标 + 加大间距，配色照旧沿用现有暗色系变量，
+ * 只在 logo 徽标这一处用回 icon 真实的橙色渐变——克制地留一个记忆点，别处不跟它抢。
+ * chromium 端 styles.css 里是同一份，保持两边能直接 diff。
+ */
+.login-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.login-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 28px 24px;
+  border-radius: 16px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent);
+  animation: login-in 0.25s ease-out;
+}
+@media (prefers-reduced-motion: reduce) { .login-card { animation: none; } }
+@keyframes login-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.login-logo {
+  width: 44px; height: 44px; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f97815, #c2590a);
+  color: #fff; font-size: 22px; font-weight: 700;
+}
+.login-title { margin: 0; font-size: 17px; font-weight: 700; text-align: center; }
+.login-subtitle {
+  margin: 6px 0 22px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+.login-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.login-field .login-label { font-size: 12px; color: var(--vscode-descriptionForeground); }
+.login-card input {
   background: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-border, transparent);
-  padding: 4px 6px;
-  border-radius: 2px;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.hint { color: var(--vscode-descriptionForeground); font-size: 11px; }
+.login-card input:focus {
+  outline: none;
+  border-color: var(--vscode-button-background);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vscode-button-background) 25%, transparent);
+}
+.login-submit { width: 100%; margin-top: 4px; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.login-hint { margin: 16px 0 0; font-size: 11px; line-height: 1.5; text-align: center; color: var(--vscode-descriptionForeground); }
 
 button {
   background: var(--vscode-button-background);

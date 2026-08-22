@@ -129,14 +129,25 @@ setInterval(() => {
 
 function renderLogin(baseUrl) {
   root.innerHTML = `
-    <form id="login-form" class="login">
-      <label>9Router 地址</label>
-      <input name="baseUrl" type="text" placeholder="http://9router.example.com" value="${escapeHtml(baseUrl)}" required />
-      <label>Dashboard 密码</label>
-      <input name="password" type="password" required />
-      <button type="submit">登录</button>
-      <p class="hint">密码仅保存在 VSCode 本地凭据库，不会同步或明文落盘。</p>
-    </form>`;
+    <div class="login-screen">
+      <div class="login-card">
+        <div class="login-logo">9</div>
+        <h1 class="login-title">9Router Quota</h1>
+        <p class="login-subtitle">连接你的 9Router 服务，查看各账号的实时配额</p>
+        <form id="login-form">
+          <label class="login-field">
+            <span class="login-label">9Router 地址</span>
+            <input name="baseUrl" type="text" placeholder="http://9router.example.com" value="${escapeHtml(baseUrl)}" required />
+          </label>
+          <label class="login-field">
+            <span class="login-label">Dashboard 密码</span>
+            <input name="password" type="password" required />
+          </label>
+          <button type="submit" class="login-submit">登录</button>
+        </form>
+        <p class="login-hint">密码仅保存在 VSCode 本地凭据库，不会同步或明文落盘。</p>
+      </div>
+    </div>`;
   document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const form = new FormData(e.target);
