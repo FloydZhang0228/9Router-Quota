@@ -6,12 +6,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest.json'), 'utf8'));
-// popup 不再走 manifest 的 action.default_popup（改成 background.ts 里手动
-// chrome.windows.create 开的独立浮动窗口，见那边 openPopupWindow），文件名固定写死在这。
-const POPUP_HTML = 'popup.html';
 const must = [
   manifest.background.service_worker,
-  POPUP_HTML,
+  manifest.action.default_popup,
   ...Object.values(manifest.icons),
   ...Object.values(manifest.action.default_icon),
 ];
@@ -20,7 +17,7 @@ for (const rel of must) {
 }
 
 // popup.html 自己引的资源（样式与脚本）manifest 里看不到，单独校验
-const html = fs.readFileSync(path.join(__dirname, POPUP_HTML), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, manifest.action.default_popup), 'utf8');
 for (const [, rel] of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
   assert.ok(fs.existsSync(path.join(__dirname, rel)), `popup.html 引用的文件不存在: ${rel}`);
 }

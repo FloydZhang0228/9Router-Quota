@@ -11,10 +11,16 @@ let lastLogs = restored?.logs || [];
 let logsLoaded = restored?.logsLoaded || false;
 let viewMode = restored?.viewMode || 'list';
 let theme = restored?.theme || 'system';
-// 必须在顶层第一次 renderQuota() 调用（下面的 state 恢复首帧）之前声明：const 有暂时性死区，
-// renderQuota 引用它时如果这行还没跑到，会直接抛 ReferenceError，且此后每次刷新都复现同一个
-// 崩溃——面板永远画不出内容，是"webview 一直空白"的真正成因。
+// 下面这几个 const 必须在文件靠前的位置声明，早于第 ~117 行那次顶层同步 renderQuota() 调用
+// （webview 被销毁重建时，state 里的缓存账号会触发它立刻跑一次首帧）。const 有暂时性死区，
+// renderQuota→renderRing 这条调用链只要碰到一个还没执行到的 const 声明就会 ReferenceError，
+// 而且崩溃发生在顶层脚本里，会连带把这行往后的所有声明都晾在那——此后每次刷新都复现同一个
+// 崩溃，面板永远画不出内容。之前 THEME_ICONS、RING_RADIUS/RING_CIRCUMFERENCE 都在文件后半段
+// 踩过这个坑（后者只在 viewMode 恢复成 'grid' 时才触发，比 THEME_ICONS 那次更隐蔽）。
+// 以后新增的顶层 const，只要可能被首帧渲染路径用到，都得挪到这一段里。
 const THEME_ICONS = { system: '◐', dark: '🌙', light: '☀️' };
+const RING_RADIUS = 22;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 function setState(patch) {
   vscode.setState({ ...vscode.getState(), ...patch });
@@ -295,9 +301,6 @@ function renderQuotaRow(q) {
 
 // SVG 描边环：数值由 JS 直接算好 dasharray/dashoffset，不依赖 CSS conic-gradient 色标
 // 的隐式排序规则（那条路线试了两版都在这个环境里渲染出问题），精确且没有歧义。
-const RING_RADIUS = 22;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-
 function renderRing(q) {
   const remaining = remainingOf(q);
   const amount = amountText(q);

@@ -12,8 +12,6 @@ import {
 const STORAGE_KEY = 'nineRouterQuota';
 const REFRESH_ALARM = 'refresh';
 const REFRESH_INTERVAL_MIN = 5;
-const BOUNDS_KEY = 'popupBounds';
-const DEFAULT_BOUNDS = { width: 780, height: 580 };
 
 interface Stored {
   baseUrl?: string;
@@ -140,47 +138,6 @@ async function logout(): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEY]: { baseUrl } });
   await refresh();
 }
-
-/**
- * 原生 action popup（default_popup）在 Chrome 里位置写死在工具栏图标正下方，没有 API 能挪。
- * 改成手动开一个 type:'popup' 的独立浮动窗口，位置/尺寸就完全由 chrome.windows API 掌控——
- * 用户拖到哪儿，onBoundsChanged 就记到哪儿，下次点图标直接复用上次的位置，不用每次都猜。
- */
-let popupWindowId: number | undefined;
-
-async function openPopupWindow(): Promise<void> {
-  if (popupWindowId != null) {
-    try {
-      await chrome.windows.update(popupWindowId, { focused: true });
-      return;
-    } catch {
-      popupWindowId = undefined; // 窗口已被用户关掉，falls through 重新创建
-    }
-  }
-  const { [BOUNDS_KEY]: bounds } = await chrome.storage.local.get(BOUNDS_KEY);
-  const win = await chrome.windows.create({
-    url: chrome.runtime.getURL('popup.html'),
-    type: 'popup',
-    width: bounds?.width ?? DEFAULT_BOUNDS.width,
-    height: bounds?.height ?? DEFAULT_BOUNDS.height,
-    left: bounds?.left,
-    top: bounds?.top,
-  });
-  popupWindowId = win.id;
-}
-
-chrome.action.onClicked.addListener(() => void openPopupWindow());
-
-chrome.windows.onBoundsChanged.addListener((win) => {
-  if (win.id !== popupWindowId) return;
-  void chrome.storage.local.set({
-    [BOUNDS_KEY]: { left: win.left, top: win.top, width: win.width, height: win.height },
-  });
-});
-
-chrome.windows.onRemoved.addListener((id) => {
-  if (id === popupWindowId) popupWindowId = undefined;
-});
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   void (async () => {
