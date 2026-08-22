@@ -26,12 +26,12 @@ new MutationObserver(() => theme === 'system' && applyTheme()).observe(document.
   attributeFilter: ['class'],
 });
 
-// 目录由 extension.ts 通过 data-media 注入，文件名随账号数据下发（acc.logo，源头是 core 的
+// 目录由 extension.ts 通过 data-images 注入，文件名随账号数据下发（acc.logo，源头是 core 的
 // PROVIDERS 表）——这边不再自己判断哪个 provider 有图，免得两处清单分头维护漏掉新 provider。
-const MEDIA_BASE = root.dataset.media || '';
+const IMAGES_BASE = root.dataset.images || '';
 function iconFor(logo, service) {
-  if (MEDIA_BASE && logo) {
-    return `<img src="${MEDIA_BASE}/providers/${encodeURIComponent(logo)}" alt="" />`;
+  if (IMAGES_BASE && logo) {
+    return `<img src="${IMAGES_BASE}/providers/${encodeURIComponent(logo)}" alt="" />`;
   }
   return `<span class="icon-fallback">${escapeHtml((service || '?')[0].toUpperCase())}</span>`;
 }

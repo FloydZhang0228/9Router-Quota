@@ -285,7 +285,8 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
     const styleUri = webview
       .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'style.css'))
       .with({ query: `v=${cacheBust}` });
-    const mediaUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media'));
+    // 全工程图片只有 images/ 这一处（含 providers logo、扩展图标、README 截图）。
+    const imagesUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'images'));
     return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -297,7 +298,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
 <link rel="stylesheet" href="${styleUri}" />
 </head>
 <body>
-  <div id="root" data-media="${mediaUri}"></div>
+  <div id="root" data-images="${imagesUri}"></div>
   <script src="${scriptUri}"></script>
 </body>
 </html>`;

@@ -21,9 +21,9 @@ assert.strictEqual(describeQuota('deepseek', { unlimited: true, used: 10, total:
 
 // PROVIDERS 表里登记的每个 logo 都得真有对应文件，否则 webview 会渲染出裂图
 // （比"没图标"更难看，而且只在那个 provider 的账号出现时才暴露）。
-const MEDIA = join(__dirname, '../../vscode-extension/media/providers');
+const LOGOS = join(__dirname, '../../vscode-extension/images/providers');
 for (const [key, info] of Object.entries(PROVIDERS)) {
-  if (info.logo) assert.ok(existsSync(join(MEDIA, info.logo)), `缺少 logo 素材: ${key} -> ${info.logo}`);
+  if (info.logo) assert.ok(existsSync(join(LOGOS, info.logo)), `缺少 logo 素材: ${key} -> ${info.logo}`);
 }
 // 未登记的 provider 不该抛错，回落成原文 + 无图，webview 自己画首字母徽标
 assert.deepStrictEqual(describeProvider('brand-new'), { service: 'brand-new', company: '未知' });

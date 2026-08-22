@@ -2,9 +2,10 @@
 
 在 VSCode 里查看 [9Router](https://github.com/decolua/9router) 各 AI 账号配额用量的客户端扩展。支持 Claude、OpenAI、Gemini、DeepSeek、GLM、Kimi 等 19 家供应商。
 
-<!-- 这里保持相对路径（GitHub 上能正常显示）；打包时由 esbuild.js 内联成 data URI
-     写进 README.packaged.md，详见那里的注释。必须用 ![]() 而非 <img>：内联脚本
-     只处理 Markdown 图片语法。图片已按展示尺寸 450px 宽存盘，无需 width 属性。 -->
+<!-- 保持相对路径：GitHub 上直接显示；打包时 vsce 按 package.json 里的 --baseImagesUrl
+     重写成 raw.githubusercontent.com 绝对地址。不能内联成 data URI —— VSCode 1.104
+     起扩展详情页的 Markdown 消毒器只放行 http/https 的 src，data: 图片会被剥成裂图。
+     图片已按展示尺寸 450px 宽存盘，无需 width 属性。 -->
 ## 运行截图
 
 侧边栏面板 · 列表视图（进度条 + 剩余百分比 + 重置倒计时，底部为实时最近请求）：

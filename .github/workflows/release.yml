@@ -38,10 +38,9 @@ jobs:
           fi
           npm version "$VERSION" --workspace=9router-quota --no-git-tag-version
 
-      # 走 npm run package 而不是直接调 vsce：那个脚本会先生成截图内联成 data URI 的
-      # README.packaged.md，并带上 --readme-path / --no-rewrite-relative-links
-      # （原因见 esbuild.js 里 buildPackagedReadme 的注释）。直接调 vsce 打出来的包，
-      # 扩展详情页的截图会全部裂图。
+      # 走 npm run package 而不是直接调 vsce：那个脚本带上了 --baseImagesUrl，把 README
+      # 里的相对截图路径重写成 raw.githubusercontent.com 绝对地址。vsce 默认按仓库根解析
+      # 相对路径，而图片在 packages/vscode-extension/ 下，不给这个前缀会全部裂图。
       - name: Package vsix
         shell: bash
         run: |

@@ -10,7 +10,7 @@
 
 ### 2. 运行截图
 
-截图素材统一放在 `packages/vscode-extension/images/`（要随 vsix 打包给扩展详情页用），这里直接引用同一份，不另存一套。
+全工程图片只有 `packages/vscode-extension/images/` 一处（截图、扩展图标、各供应商 logo），文档与代码一律从这里取，不另存副本。
 
 <1> 侧边栏面板 · 列表视图（进度条 + 剩余百分比 + 重置倒计时，底部为实时最近请求）：
 
@@ -54,8 +54,8 @@ packages/
                       文案格式化。纯 TypeScript + 原生 fetch，不依赖平台 API，
                       供各端复用或移植。
   vscode-extension/   VSCode 扩展客户端：活动栏面板 + 状态栏悬浮卡片。
-    media/            面板前端资源（app.js / style.css / 各供应商 logo）。
-    images/           README 截图，随 vsix 打包，供扩展详情页显示。
+    media/            面板前端资源（app.js / style.css）。
+    images/           全工程唯一图片目录：README 截图、扩展图标、各供应商 logo。
     .github/          （仓库级）CI 工作流：tag 触发自动打包发布。
 ```
 
@@ -104,7 +104,9 @@ npm run package
 
 产物为当前目录下的 `9router-quota-<版本号>.vsix`。
 
-不要直接调 `vsce package`：该脚本会先把 README 里的截图内联成 data URI 生成 `README.packaged.md`，并带上 `--readme-path` 与 `--no-rewrite-relative-links`。少了这几步，vsce 会把图片相对路径重写成 `https://github.com/<repo>/raw/HEAD/...`（私有仓库匿名 404，且按仓库根解析路径也不对），扩展详情页的截图会全部裂图。
+不要直接调 `vsce package`：该脚本会先跑 `check-assets.js` 校验图片，并带上 `--baseImagesUrl`，把 README 里的截图相对路径重写成 `raw.githubusercontent.com` 的绝对地址。vsce 默认按仓库根解析相对路径，而图片在 `packages/vscode-extension/` 下，少了这个前缀扩展详情页的截图会全部裂图。
+
+截图必须走 https 绝对地址，不能内联成 data URI：VSCode 1.104 起扩展详情页的 Markdown 消毒器只放行 `http`/`https` 协议的 `src`，`data:` 图片会被整个剥掉。也因此仓库必须保持公开，否则 raw 地址匿名访问 404。
 
 ### 5. 本地安装 vsix
 

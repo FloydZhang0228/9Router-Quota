@@ -15,7 +15,7 @@
   "categories": ["Other"],
   "keywords": ["9router", "quota", "usage", "claude", "配额"],
   "activationEvents": ["onStartupFinished"],
-  "icon": "media/icon.png",
+  "icon": "images/icon.png",
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -24,7 +24,7 @@
     ],
     "viewsContainers": {
       "activitybar": [
-        { "id": "nineRouterQuota", "title": "9Router Quota", "icon": "media/icon.svg" }
+        { "id": "nineRouterQuota", "title": "9Router Quota", "icon": "images/icon.svg" }
       ]
     },
     "views": {
@@ -47,8 +47,9 @@
     "compile": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "vscode:prepublish": "node esbuild.js --production",
-    "package": "node esbuild.js --production && npx @vscode/vsce package --no-dependencies --readme-path README.packaged.md --no-rewrite-relative-links",
-    "typecheck": "tsc -p . --noEmit"
+    "package": "node check-assets.js && node esbuild.js --production && npx @vscode/vsce package --no-dependencies --baseImagesUrl https://raw.githubusercontent.com/FloydZhang0228/9Router-Quota/master/packages/vscode-extension",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node check-assets.js"
   },
   "dependencies": {
     "@9router-quota/core": "*"

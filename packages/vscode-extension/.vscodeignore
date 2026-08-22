@@ -5,8 +5,8 @@
 src/**
 node_modules/**
 esbuild.js
+check-assets.js
 tsconfig.json
-# 打包用的是 esbuild.js 生成的 README.packaged.md（截图已内联成 data URI，见那里的注释），
-# 源 README 和图片文件不必再进包。
-README.md
-images/**
+# README 里的截图走 GitHub raw 绝对地址（打包时由 --baseImagesUrl 重写），不进包省体积；
+# images/ 下其余图片（扩展图标、providers logo）是运行时资源，必须留在包里。
+images/screenshot-*.png
