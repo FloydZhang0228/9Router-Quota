@@ -83,6 +83,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private stopRecentStream?: () => void;
   private lastRendered: RenderedAccount[] = [];
+  private lastUpdatedAt = 0;
   // SSE 连接可能在 webview 还没打开之前就先开了（状态栏 tooltip 那次早刷新），推送的数据不能
   // 只指着 postMessage 单发一次——那次很可能因为 this.view 还是 undefined 直接被丢掉。
   // 缓存住，等真有 webview 了（或者 webview 报 ready）主动补发一次。
@@ -110,6 +111,13 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
       this.stopRecentStream?.();
       this.stopRecentStream = undefined;
     });
+    // webview 被销毁重建（retainContextWhenHidden 只是尽力保留，不是保证）时这里重跑。
+    // 已有数据先补发一帧，侧栏立即有画面；webview 侧的 state 恢复是第二重保险，
+    // 两边谁先到都不闪"加载中…"。
+    if (this.lastRendered.length) {
+      webviewView.webview.postMessage({ type: 'quota', accounts: this.lastRendered, updatedAt: this.lastUpdatedAt ?? 0 });
+    }
+    this.pushCachedLogs();
     this.requestRefresh();
   }
 
@@ -159,6 +167,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
       if (seq !== this.refreshSeq) return; // 已有更新的刷新在跑，丢弃这次过期结果
       const rendered = accounts.map(formatAccount);
       this.lastRendered = rendered;
+      this.lastUpdatedAt = Date.now();
       this.onAccountsChange?.(rendered);
       this.view?.webview.postMessage({ type: 'quota', accounts: rendered, updatedAt: Date.now() });
     } catch (err) {
@@ -213,6 +222,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
     this.stopRecentStream?.();
     this.stopRecentStream = undefined;
     this.lastRendered = [];
+    this.lastUpdatedAt = 0;
     this.onAccountsChange?.(this.lastRendered);
     this.lastLogs = [];
     this.logsLoaded = false;

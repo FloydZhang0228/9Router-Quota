@@ -1,12 +1,16 @@
 const vscode = acquireVsCodeApi();
 const root = document.getElementById('root');
 
-let lastAccounts = null;
-let lastUpdatedAt = null;
-let lastLogs = [];
-let logsLoaded = false;
-let viewMode = vscode.getState()?.viewMode || 'list';
-let theme = vscode.getState()?.theme || 'system';
+// 账号数据也进 webview state：retainContextWhenHidden 只是尽力保留，内存紧张时 webview
+// 仍会被销毁重建。重建后若数据不在 state 里，就要干等一次完整刷新（几秒）才有画面，
+// 表现为"切走再切回来变加载中"。state 恢复首帧旧数据，刷新回来无感替换。
+const restored = vscode.getState();
+let lastAccounts = restored?.accounts || null;
+let lastUpdatedAt = restored?.updatedAt || null;
+let lastLogs = restored?.logs || [];
+let logsLoaded = restored?.logsLoaded || false;
+let viewMode = restored?.viewMode || 'list';
+let theme = restored?.theme || 'system';
 
 function setState(patch) {
   vscode.setState({ ...vscode.getState(), ...patch });
@@ -81,17 +85,20 @@ window.addEventListener('message', (event) => {
   else if (msg.type === 'quota') {
     lastAccounts = msg.accounts;
     lastUpdatedAt = msg.updatedAt;
+    setState({ accounts: lastAccounts, updatedAt: lastUpdatedAt });
     renderQuota();
   } else if (msg.type === 'quotaAccount') {
     if (lastAccounts) {
       const idx = lastAccounts.findIndex((a) => a.id === msg.account.id);
       if (idx >= 0) lastAccounts[idx] = msg.account;
       else lastAccounts.push(msg.account);
+      setState({ accounts: lastAccounts });
       renderQuota();
     }
   } else if (msg.type === 'recentRequests') {
     lastLogs = msg.items || [];
     logsLoaded = true;
+    setState({ logs: lastLogs, logsLoaded: true });
     // 页脚容器还不存在时（比如首次登录）才整页重绘，平时只更新这一小块，不打断滚动位置。
     const el = document.getElementById('recent-footer');
     if (el) el.innerHTML = footerRows(lastLogs);
@@ -101,6 +108,10 @@ window.addEventListener('message', (event) => {
 // 告诉扩展主机"脚本已经跑起来了，消息监听器就位"——resolveWebviewView 里那次 refresh()
 // 如果因为时序问题（webview 还没跑完脚本就 postMessage）被吞掉，靠这个兜底重新拿一次数据。
 vscode.postMessage({ type: 'ready' });
+// 首帧：state 里有旧数据就直接画（webview 被销毁重建的场景），只有真正的第一次打开
+// 才落到"加载中…"。后台刷新回来会走 renderQuota 无感替换。
+if (lastAccounts) renderQuota();
+else renderLoading();
 setInterval(() => {
   const el = document.getElementById('recent-footer');
   if (el && lastLogs.length) el.innerHTML = footerRows(lastLogs);
@@ -135,7 +146,10 @@ function renderError(message) {
       <button id="logout">退出登录</button>
     </div>`;
   document.getElementById('retry').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
-  document.getElementById('logout').addEventListener('click', () => vscode.postMessage({ type: 'logout' }));
+  document.getElementById('logout').addEventListener('click', () => {
+    setState({ accounts: null, updatedAt: null, logs: [], logsLoaded: false });
+    vscode.postMessage({ type: 'logout' });
+  });
 }
 
 function setViewMode(mode) {
@@ -183,7 +197,16 @@ function renderQuota() {
     e.currentTarget.classList.add('spin');
     vscode.postMessage({ type: 'refresh' });
   });
-  document.getElementById('logout').addEventListener('click', () => vscode.postMessage({ type: 'logout' }));
+  // 退出登录不能只发消息：state 里还躺着旧账号数据，webview 若被重建会把已注销的配额
+  // 又画出来。先清掉再交给扩展主机走 needLogin 流程。
+  document.getElementById('logout').addEventListener('click', () => {
+    lastAccounts = null;
+    lastUpdatedAt = null;
+    lastLogs = [];
+    logsLoaded = false;
+    setState({ accounts: null, updatedAt: null, logs: [], logsLoaded: false });
+    vscode.postMessage({ type: 'logout' });
+  });
   root.querySelectorAll('.account-refresh').forEach((btn) =>
     btn.addEventListener('click', () => {
       btn.classList.add('spin');

@@ -222,7 +222,7 @@ function renderQuotaRow(q: Quota): string {
   const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
   const label = amount ?? (remaining != null ? remaining.toFixed(0) + '%' : null);
   const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
-  const color = level === 'red' ? 'var(--c-red)' : level === 'amber' ? 'var(--c-amber)' : 'var(--c-green)';
+  const color = level === 'red' ? 'var(--vscode-charts-red)' : level === 'amber' ? 'var(--vscode-charts-yellow)' : 'var(--vscode-charts-green)';
   const track = `linear-gradient(to right, ${color} 0%, ${color} ${percent}%, rgba(128,128,140,.25) ${percent}%, rgba(128,128,140,.25) 100%)`;
   const right =
     q.unlimited && label == null

@@ -25,8 +25,8 @@
   --vscode-charts-yellow: #f0d264;
   --vscode-charts-red: #ef5f5f;
 }
-/* popup 需要固定尺寸：太窄挤不下配额条，太高会被浏览器截断 */
-html, body { width: 380px; height: 520px; }
+/* popup 宽度尽量撑满（右缘贴近浏览器右边界），上限防超宽屏太夸张；高度固定防截断 */
+html, body { min-width: 380px; max-width: 560px; height: 520px; }
 
 html, body { height: 100%; }
 body {
