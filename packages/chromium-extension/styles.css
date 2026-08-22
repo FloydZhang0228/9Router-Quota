@@ -26,15 +26,15 @@
   --vscode-charts-red: #ef5f5f;
 }
 /*
- * popup 尺寸必须写死像素，且只能写一次。
- * Chrome 对 popup 的硬上限是 800x600（没有 API 能突破，也无法跟随浏览器窗口宽度自适应），
- * 这里顶到上限内的安全值，账号多时一屏能装下更多。
- * 之前这里还跟着一条 html,body{height:100%}，把 520px 覆盖成了百分比：html 高度取自视口、
- * 视口高度又由文档内容撑出，两者互相依赖；body 的 overflow:hidden 再把溢出裁掉，Chrome
- * 就完全量不出该开多高。窗口一矮，.board（flex:1）先被压成 0，只剩 flex:none 的工具栏和
- * 页脚——"第二次打开看不到进度条/圆环"就是这么来的（首次打开测到的高度靠时序侥幸)。
+ * popup 尺寸必须写死像素，且只能写一次（不能用 vw/vh 百分比，会陷入"视口高度取决于
+ * 文档高度、文档高度又是视口的百分比"的死循环，Chrome 完全量不出该开多高——之前这里
+ * 用过 html,body{height:100%}，"第二次打开看不到进度条/圆环"就是这么来的，.board
+ * flex:1 被压成 0，首次打开测到的高度全靠时序侥幸）。
+ * 这两个数字只是 JS 跑起来之前的兜底默认值：popup.ts 里的 sizePopup() 会在脚本最前面
+ * 按屏幕宽度的 1/5（顶到 Chrome 800px 硬上限）重新赋值，这里选一个常见屏幕下大致匹配
+ * 的尺寸，避免 JS 生效前闪一下巨大的旧尺寸。
  */
-html, body { width: 780px; height: 580px; }
+html, body { width: 400px; height: 600px; }
 body {
   font-family: var(--vscode-font-family);
   color: var(--vscode-foreground);
@@ -232,11 +232,16 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   white-space: nowrap;
 }
 
-/* grid/ring view — 半透明小卡片 + 细环渐变，观感更精致 */
-.ring-row { display: flex; flex-wrap: wrap; gap: 3px; }
+/*
+ * grid/ring view — 半透明小卡片 + 细环渐变，观感更精致。
+ * flex-wrap 按固定卡片宽度硬换行，凑不满整行时末尾会留一截空白（宽度不能整除时必然如此）。
+ * 换成跟 .board-list 同款的 grid auto-fill + minmax(1fr)：这一行到底能塞几列由浏览器
+ * 按可用宽度自己算，多出来的宽度平摊给每一列撑满，末尾不会再留空。
+ */
+.ring-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 3px; }
 .ring-card {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
-  width: 82px; padding: 10px 6px 8px;
+  padding: 10px 6px 8px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
   border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent);

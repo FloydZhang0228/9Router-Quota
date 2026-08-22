@@ -182,11 +182,16 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   white-space: nowrap;
 }
 
-/* grid/ring view — 半透明小卡片 + 细环渐变，观感更精致 */
-.ring-row { display: flex; flex-wrap: wrap; gap: 3px; }
+/*
+ * grid/ring view — 半透明小卡片 + 细环渐变，观感更精致。
+ * flex-wrap 按固定卡片宽度硬换行，凑不满整行时末尾会留一截空白（宽度不能整除时必然如此）。
+ * 换成跟 chromium 端同款的 grid auto-fill + minmax(1fr)：这一行到底能塞几列由浏览器
+ * 按可用宽度自己算，多出来的宽度平摊给每一列撑满，末尾不会再留空。
+ */
+.ring-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 3px; }
 .ring-card {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
-  width: 82px; padding: 10px 6px 8px;
+  padding: 10px 6px 8px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
   border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent);

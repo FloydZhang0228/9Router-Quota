@@ -33,6 +33,23 @@ interface LogRow {
   completionTokens: number;
 }
 
+/**
+ * Chrome 原生 action popup 尺寸硬顶在 800x600（没有 API 能突破，超过这个数值不生效）。
+ * 宽度按屏幕宽度的 1/5 动态算，高度直接顶满这个硬上限——用户想要的"顶到任务栏"在原生
+ * popup 里达不到，600px 已经是能拿到的最大值。必须用绝对像素赋值（不能用 vw/vh 百分比）：
+ * 百分比会让浏览器陷入"视口高度取决于文档高度、文档高度又是视口的百分比"的死循环，
+ * 量不出该开多高——上面 styles.css 里那段 780x580 也是被这个坑逼出来的写死值，这里改成
+ * JS 算出来的动态像素，同样必须是绝对值。放在整个脚本最前面，赶在 Chrome 量 popup 尺寸之前。
+ */
+(function sizePopup(): void {
+  const width = Math.max(300, Math.min(Math.round(screen.width / 5), 800));
+  const height = Math.min(screen.availHeight, 600);
+  for (const el of [document.documentElement, document.body]) {
+    el.style.width = `${width}px`;
+    el.style.height = `${height}px`;
+  }
+})();
+
 const root = document.getElementById('root') as HTMLDivElement;
 
 let lastAccounts: Account[] | null = null;
