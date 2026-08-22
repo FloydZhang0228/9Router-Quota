@@ -27,7 +27,7 @@ jobs:
         run: npm run build -w packages/core
 
       # 版本来自各扩展 package.json，而不是 Git tag。CI 在临时工作区把 v 后面的 SemVer
-      # 写进 manifest，不提交、不回推；chrome 包的 manifest.json 与 package.json 必须
+      # 写进 manifest，不提交、不回推；chromium 包的 manifest.json 与 package.json 必须
       # 同步改（check-assets.js 强制两者一致，漏改一个打包就会失败）。
       - name: Sync extension versions from tag
         shell: bash
@@ -38,8 +38,8 @@ jobs:
             exit 1
           fi
           npm version "$VERSION" --workspace=9router-quota --no-git-tag-version
-          npm version "$VERSION" --workspace=9router-quota-chrome --no-git-tag-version
-          node -e "const fs=require('fs');const f='packages/chrome-extension/manifest.json';const m=JSON.parse(fs.readFileSync(f));m.version='$VERSION';fs.writeFileSync(f,JSON.stringify(m,null,2)+'\n')"
+          npm version "$VERSION" --workspace=9router-quota-chromium --no-git-tag-version
+          node -e "const fs=require('fs');const f='packages/chromium-extension/manifest.json';const m=JSON.parse(fs.readFileSync(f));m.version='$VERSION';fs.writeFileSync(f,JSON.stringify(m,null,2)+'\n')"
 
       # 走 npm run package 而不是直接调 vsce：那个脚本带上了 --baseImagesUrl，把 README
       # 里的相对截图路径重写成 raw.githubusercontent.com 绝对地址。vsce 默认按仓库根解析
@@ -56,7 +56,7 @@ jobs:
       - name: Package chromium extension
         shell: bash
         run: |
-          cd packages/chrome-extension
+          cd packages/chromium-extension
           npm run compile
           npm run package
           test -f "9router-quota-chromium-${GITHUB_REF_NAME#v}.zip"
@@ -66,5 +66,5 @@ jobs:
         with:
           files: |
             packages/vscode-extension/*.vsix
-            packages/chrome-extension/*.zip
+            packages/chromium-extension/*.zip
           generate_release_notes: true

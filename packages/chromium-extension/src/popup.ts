@@ -1,0 +1,274 @@
+import { amountText, levelOf, remainingOf, timeAgo, timeUntil } from '@9router-quota/core';
+
+/**
+ * 面板前端。渲染逻辑与 VSCode 端 media/app.js 同源，两处差异只有三点：
+ *   ① 通信：vscode.postMessage / window.onmessage → chrome.runtime.sendMessage / onMessage
+ *   ② 偏好存储：vscode.getState/setState → localStorage（popup 每次开都是新页面）
+ *   ③ 主题：宿主不提供 --vscode-* 变量，改用自己的调色板 + prefers-color-scheme
+ * 展示层纯函数（remainingOf / amountText / levelOf / timeUntil / timeAgo）已收进 core，
+ * 两端共用，不再各抄一份。
+ */
+
+interface Quota {
+  name: string;
+  description: string;
+  percent: number | null;
+  unlimited: boolean;
+  resetAt?: string;
+  used?: number;
+  total?: number;
+}
+interface Account {
+  id: string;
+  service: string;
+  account: string;
+  plan?: string;
+  logo: string | null;
+  quotas: Quota[];
+}
+interface LogRow {
+  timestamp: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+}
+
+const root = document.getElementById('root') as HTMLDivElement;
+
+let lastAccounts: Account[] | null = null;
+let lastUpdatedAt = 0;
+let lastLogs: LogRow[] = [];
+let logsLoaded = false;
+let viewMode = localStorage.getItem('viewMode') || 'list';
+let theme = localStorage.getItem('theme') || 'system';
+
+function applyTheme(): void {
+  document.body.dataset.theme =
+    theme === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
+}
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (theme === 'system') applyTheme();
+});
+
+const IMAGES_BASE = chrome.runtime.getURL('images');
+function iconFor(logo: string | null, service: string): string {
+  if (logo) return `<img src="${IMAGES_BASE}/providers/${encodeURIComponent(logo)}" alt="" />`;
+  return `<span class="icon-fallback">${escapeHtml((service || '?')[0].toUpperCase())}</span>`;
+}
+
+function send(message: Record<string, unknown>): void {
+  // service worker 可能正在冷启动，首帧 sendMessage 偶发 reject；吞掉即可，
+  // background 起来后会主动把数据推过来。
+  chrome.runtime.sendMessage(message).catch(() => {});
+}
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'needLogin') renderLogin(msg.baseUrl || '');
+  else if (msg.type === 'loading') renderLoading();
+  else if (msg.type === 'quota') {
+    lastAccounts = msg.accounts;
+    lastUpdatedAt = msg.updatedAt;
+    renderQuota();
+  } else if (msg.type === 'quotaAccount') {
+    if (lastAccounts) {
+      const idx = lastAccounts.findIndex((a) => a.id === msg.account.id);
+      if (idx >= 0) lastAccounts[idx] = msg.account;
+      else lastAccounts.push(msg.account);
+      renderQuota();
+    }
+  } else if (msg.type === 'recentRequests') {
+    lastLogs = msg.items || [];
+    logsLoaded = true;
+    // 页脚容器还在就只更新这一小块，不整页重绘，免得打断滚动位置。
+    const el = document.getElementById('recent-footer');
+    if (el) el.innerHTML = footerRows(lastLogs);
+    else if (lastAccounts) renderQuota();
+  } else if (msg.type === 'error') renderError(msg.message);
+});
+
+renderLoading();
+send({ type: 'ready' });
+setInterval(() => {
+  const el = document.getElementById('recent-footer');
+  if (el && lastLogs.length) el.innerHTML = footerRows(lastLogs);
+}, 30000);
+
+function renderLogin(baseUrl: string): void {
+  root.innerHTML = `
+    <form id="login-form" class="login">
+      <label>9Router 地址</label>
+      <input name="baseUrl" type="text" placeholder="http://9router.example.com" value="${escapeHtml(baseUrl)}" required />
+      <label>Dashboard 密码</label>
+      <input name="password" type="password" required />
+      <button type="submit">登录</button>
+      <p class="hint">地址 http / https 均可。密码保存在浏览器扩展的本地存储中，不会同步到云端。</p>
+    </form>`;
+  document.getElementById('login-form')!.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const form = new FormData(e.target as HTMLFormElement);
+    send({ type: 'login', baseUrl: form.get('baseUrl'), password: form.get('password') });
+    renderLoading();
+  });
+}
+
+function renderLoading(): void {
+  root.innerHTML = `<div class="status">加载中…</div>`;
+}
+
+function renderError(message: string): void {
+  root.innerHTML = `
+    <div class="status error">${escapeHtml(message)}</div>
+    <div class="actions">
+      <button id="retry">重试</button>
+      <button id="logout">退出登录</button>
+    </div>`;
+  document.getElementById('retry')!.addEventListener('click', () => send({ type: 'refresh' }));
+  document.getElementById('logout')!.addEventListener('click', () => send({ type: 'logout' }));
+}
+
+function setViewMode(mode: string): void {
+  viewMode = mode;
+  localStorage.setItem('viewMode', mode);
+  renderQuota();
+}
+
+const THEME_ICONS: Record<string, string> = { system: '◐', dark: '🌙', light: '☀️' };
+function cycleTheme(): void {
+  theme = theme === 'system' ? 'dark' : theme === 'dark' ? 'light' : 'system';
+  localStorage.setItem('theme', theme);
+  applyTheme();
+  renderQuota();
+}
+
+function renderQuota(): void {
+  if (!lastAccounts) return;
+  // 整页重绘会销毁 .board 滚动容器，位置归零。先存后还。
+  const scrollTop = document.querySelector('.board')?.scrollTop ?? 0;
+  const time = new Date(lastUpdatedAt).toLocaleTimeString('zh-CN', { hour12: false });
+  const body = lastAccounts.length
+    ? lastAccounts.map((acc) => renderAccount(acc, viewMode)).join('')
+    : `<div class="status">未获取到任何账号配额</div>`;
+  root.innerHTML = `
+    <div class="toolbar">
+      <span>更新于 ${time}</span>
+      <div class="actions">
+        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">☰</button>
+        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">◎</button>
+        <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${THEME_ICONS[theme]}</button>
+        <button id="refresh" title="刷新全部">⟳</button>
+        <button id="logout" title="退出登录">⏻</button>
+      </div>
+    </div>
+    <div class="board board-${viewMode}">${body}</div>
+    ${renderRecentFooter()}`;
+  document.getElementById('view-list')!.addEventListener('click', () => setViewMode('list'));
+  document.getElementById('view-grid')!.addEventListener('click', () => setViewMode('grid'));
+  document.getElementById('theme-toggle')!.addEventListener('click', cycleTheme);
+  document.getElementById('refresh')!.addEventListener('click', (e) => {
+    (e.currentTarget as HTMLElement).classList.add('spin');
+    send({ type: 'refresh' });
+  });
+  document.getElementById('logout')!.addEventListener('click', () => send({ type: 'logout' }));
+  root.querySelectorAll<HTMLElement>('.account-refresh').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      btn.classList.add('spin');
+      send({ type: 'refreshAccount', connectionId: btn.dataset.id });
+    })
+  );
+  const board = document.querySelector('.board');
+  if (board) board.scrollTop = scrollTop;
+}
+
+function footerRows(logs: LogRow[]): string {
+  if (!logsLoaded) return `<div class="recent-row recent-loading">加载中…</div>`;
+  return logs
+    .slice(0, 2)
+    .map(
+      (l) => `
+      <div class="recent-row">
+        <span class="recent-model">${escapeHtml(l.model)}</span>
+        <span class="recent-tokens">${l.promptTokens}<b>↑</b> ${l.completionTokens}<b>↓</b></span>
+        <span class="recent-time">${timeAgo(l.timestamp)}</span>
+      </div>`
+    )
+    .join('');
+}
+
+// 容器始终渲染（哪怕暂时没数据），SSE 消息才能直接找到它做局部更新。
+function renderRecentFooter(): string {
+  return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}</div>`;
+}
+
+function renderAccount(acc: Account, mode: string): string {
+  const tier = acc.plan ? `<span class="account-tier">${escapeHtml(acc.plan)}</span>` : '';
+  const sub = acc.account ? escapeHtml(acc.account) : '';
+  const body = mode === 'grid' ? acc.quotas.map(renderRing).join('') : acc.quotas.map(renderQuotaRow).join('');
+  return `
+    <div class="account">
+      <div class="account-header">
+        <span class="account-icon">${iconFor(acc.logo, acc.service)}</span>
+        <span class="account-title">${escapeHtml(acc.service)}</span>${tier}
+        <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">⟳</button>
+        <span class="account-sub">${sub}</span>
+      </div>
+      <div class="${mode === 'grid' ? 'ring-row' : ''}">${body}</div>
+    </div>`;
+}
+
+function renderQuotaRow(q: Quota): string {
+  const remaining = remainingOf(q);
+  const amount = amountText(q);
+  const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
+  const label = amount ?? (remaining != null ? remaining.toFixed(0) + '%' : null);
+  const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
+  const color = level === 'red' ? 'var(--c-red)' : level === 'amber' ? 'var(--c-amber)' : 'var(--c-green)';
+  const track = `linear-gradient(to right, ${color} 0%, ${color} ${percent}%, rgba(128,128,140,.25) ${percent}%, rgba(128,128,140,.25) 100%)`;
+  const right =
+    q.unlimited && label == null
+      ? '<span class="quota-percent">无限</span>'
+      : `<div class="quota-track" style="background:${track}"></div>
+         <span class="quota-percent">${label ?? '—'}</span>`;
+  const meta = q.resetAt
+    ? `<span class="quota-meta" title="${escapeHtml(q.description)}">${timeUntil(q.resetAt)}</span>`
+    : '';
+  return `
+    <div class="quota-row" data-level="${level}">
+      <span class="quota-pill">${escapeHtml(q.name)}</span>
+      ${right}
+      ${meta}
+    </div>`;
+}
+
+// SVG 描边环：dasharray/dashoffset 由 JS 直接算，不依赖 CSS conic-gradient 的色标排序。
+const RING_RADIUS = 22;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+function renderRing(q: Quota): string {
+  const remaining = remainingOf(q);
+  const amount = amountText(q);
+  const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
+  const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
+  const text = amount ?? (q.unlimited && remaining == null ? '∞' : remaining != null ? `${remaining.toFixed(0)}%` : '—');
+  const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
+  return `
+    <div class="ring-card">
+      <div class="ring">
+        <svg viewBox="0 0 52 52" width="52" height="52">
+          <circle class="ring-track" cx="26" cy="26" r="${RING_RADIUS}" />
+          <circle class="ring-fill" data-level="${level}" cx="26" cy="26" r="${RING_RADIUS}"
+            stroke-dasharray="${RING_CIRCUMFERENCE}" stroke-dashoffset="${offset}" />
+        </svg>
+        <span class="ring-text">${text}</span>
+      </div>
+      <span class="ring-label">${escapeHtml(q.name)}</span>
+      ${q.resetAt ? `<span class="ring-meta">${timeUntil(q.resetAt)}</span>` : ''}
+    </div>`;
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!
+  );
+}
