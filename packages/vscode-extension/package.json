@@ -49,7 +49,7 @@
     "vscode:prepublish": "node esbuild.js --production",
     "package": "node check-assets.js && node esbuild.js --production && npx @vscode/vsce package --no-dependencies --baseImagesUrl https://raw.githubusercontent.com/FloydZhang0228/9Router-Quota/master/packages/vscode-extension",
     "typecheck": "tsc -p . --noEmit",
-    "test": "node check-assets.js"
+    "test": "node check-assets.js && node test-app-render.mjs"
   },
   "dependencies": {
     "@9router-quota/core": "*"

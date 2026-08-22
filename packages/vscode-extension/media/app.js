@@ -11,6 +11,10 @@ let lastLogs = restored?.logs || [];
 let logsLoaded = restored?.logsLoaded || false;
 let viewMode = restored?.viewMode || 'list';
 let theme = restored?.theme || 'system';
+// 必须在顶层第一次 renderQuota() 调用（下面的 state 恢复首帧）之前声明：const 有暂时性死区，
+// renderQuota 引用它时如果这行还没跑到，会直接抛 ReferenceError，且此后每次刷新都复现同一个
+// 崩溃——面板永远画不出内容，是"webview 一直空白"的真正成因。
+const THEME_ICONS = { system: '◐', dark: '🌙', light: '☀️' };
 
 function setState(patch) {
   vscode.setState({ ...vscode.getState(), ...patch });
@@ -158,7 +162,6 @@ function setViewMode(mode) {
   renderQuota();
 }
 
-const THEME_ICONS = { system: '◐', dark: '🌙', light: '☀️' };
 function cycleTheme() {
   theme = theme === 'system' ? 'dark' : theme === 'dark' ? 'light' : 'system';
   setState({ theme });

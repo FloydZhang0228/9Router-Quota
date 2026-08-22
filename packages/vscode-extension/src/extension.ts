@@ -308,7 +308,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // 用等宽代码块拼 █░ 字符充当进度条。
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.name = '9Router Quota';
-  statusBarItem.text = '𝟗𝐑'; // 数学粗体字形：比全角更紧凑（正常字宽，不带全角的方块间距），比 ASCII 更粗更显眼
+  statusBarItem.text = '𝟗'; // 数学粗体字形：比全角更紧凑（正常字宽，不带全角的方块间距），比 ASCII 更粗更显眼；跟新 logo 一致只留 "9"
   statusBarItem.command = '9router-quota.open';
   statusBarItem.tooltip = buildTooltip([]);
   statusBarItem.show();

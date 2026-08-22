@@ -11,7 +11,6 @@
     "type": "module"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_title": "9Router Quota",
     "default_icon": {
       "16": "images/icon-16.png",
