@@ -1,0 +1,5 @@
+- generic [active] [ref=e1]:
+  - paragraph [ref=e2]: A = var() 写法
+  - generic [ref=e3]: A
+  - paragraph [ref=e5]: B = 字面色写法
+  - generic [ref=e6]: B

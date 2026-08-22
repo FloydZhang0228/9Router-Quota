@@ -163,10 +163,9 @@ button:hover { background: var(--vscode-button-hoverBackground); }
    VSCode webview 那样宿主会统一换肤滚动条），得自己用 --vscode-scrollbarSlider-background
    这套已经声明好但一直没接上的变量画一条细的、跟随主题的滚动条。 */
 .board { scrollbar-width: thin; scrollbar-color: var(--vscode-scrollbarSlider-background) transparent; }
-.board::-webkit-scrollbar { width: 8px; height: 8px; }
+.board::-webkit-scrollbar { width: 6px; height: 6px; }
 .board::-webkit-scrollbar-track { background: transparent; }
-.board::-webkit-scrollbar-thumb { background: var(--vscode-scrollbarSlider-background); border-radius: 4px; }
-.board::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--vscode-scrollbarSlider-background), black 15%); }
+.board::-webkit-scrollbar-thumb { background: var(--vscode-scrollbarSlider-background); border-radius: 3px; }
 /* popup 有 780px 可用（远宽于 VSCode 侧边栏），列表视图按宽度自动分栏，
    账号多时不用一直往下滚。auto-fill + minmax 由浏览器算列数，不需要 JS 参与。 */
 .board-list {

@@ -121,16 +121,16 @@ button:hover { background: var(--vscode-button-hoverBackground); }
    于是子元素一旦顶宽就会出现横向滚动条，宁可显式禁掉。 */
 .board { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 /*
- * VS Code 原生会给 webview 滚动条注入宿主编辑器主题的颜色，但那是"编辑器当前是深色/浅色
- * 主题"，跟本插件自己这套跟随系统/手动切换的 data-theme 是两回事——用户编辑器开着深色
- * 主题、这里手动切成浅色时，滚动条会保留宿主那份深色，跟浅色卡片对不上（截图里那条蓝紫色
- * 滚动条就是这么来的）。跟 chromium 端同款，自己画一条跟 body[data-theme] 走的滚动条，
- * 不再依赖宿主注入的颜色。
+ * VS Code 给 webview 的 html 注入 scrollbar-color（宿主编辑器主题色），它是可继承的标准
+ * 属性，而 Chromium 121+ 规定：元素带非 auto 的 scrollbar-color 后，::-webkit-scrollbar
+ * 整组伪元素样式一律忽略。所以只写伪元素覆盖不了，必须在 .board 本体再写一次标准属性，
+ * 用自己声明的 --vscode-scrollbarSlider-background（跟 body[data-theme] 走）压掉继承。
+ * 下面那组 ::-webkit 规则只对 scrollbar-color 不生效的旧内核有意义，宽度 6px 两端统一收窄。
  */
-.board::-webkit-scrollbar { width: 8px; }
+.board { scrollbar-width: thin; scrollbar-color: var(--vscode-scrollbarSlider-background) transparent; }
+.board::-webkit-scrollbar { width: 6px; }
 .board::-webkit-scrollbar-track { background: transparent; }
-.board::-webkit-scrollbar-thumb { background: var(--vscode-scrollbarSlider-background); border-radius: 4px; }
-.board::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--vscode-scrollbarSlider-background), black 15%); }
+.board::-webkit-scrollbar-thumb { background: var(--vscode-scrollbarSlider-background); border-radius: 3px; }
 /* 列方向仍继承 flex-wrap:wrap 时，高度不足会横向开第二列，provider 就会并排。 */
 .board-list { flex-direction: column; flex-wrap: nowrap; width: 100%; }
 .board-list .account { flex: none; width: 100%; box-sizing: border-box; }

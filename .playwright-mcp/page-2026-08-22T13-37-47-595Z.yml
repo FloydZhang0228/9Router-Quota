@@ -1,0 +1,3 @@
+- generic [ref=f1e2]:
+  - generic [ref=f1e3]: "A: 仅 ::-webkit 绿色 thumb（预期被忽略 → 红色）"
+  - generic [ref=f1e5]: "B: 自带 scrollbar-color（预期蓝色 thumb）"
