@@ -3,3 +3,4 @@ dist/
 *.vsix
 *.tsbuildinfo
 .vscode-test/
+.playwright-mcp/
