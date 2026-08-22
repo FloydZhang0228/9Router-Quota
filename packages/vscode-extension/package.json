@@ -38,7 +38,7 @@
         "9routerQuota.baseUrl": {
           "type": "string",
           "default": "",
-          "description": "9Router 服务地址，例如 http://9router.example.com"
+          "description": "9Router 服务地址，http/https 均可，例如 http://9router.example.com；省略协议时按 http 处理"
         }
       }
     }

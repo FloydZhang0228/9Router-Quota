@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
 import {
   NineRouterClient,
+  amountText,
   describeProvider,
   describeQuota,
   providerLogo,
   quotaPercentUsed,
+  remainingOf,
+  timeUntil,
   type AccountQuota,
   type RecentRequest,
 } from '@9router-quota/core';
@@ -41,36 +44,11 @@ function formatAccount({ connection, usage }: AccountQuota) {
 }
 
 type RenderedAccount = ReturnType<typeof formatAccount>;
-type RenderedQuota = RenderedAccount['quotas'][number];
 
-// 下面这三个纯函数是 media/app.js 里同名逻辑的翻版：状态栏 tooltip 在扩展主机（Node）里拼，
-// 面板本体在 webview（浏览器）里拼，两边运行时不共享代码，只能各写一份，保持逻辑一致即可。
-function remainingOf(q: RenderedQuota): number | null {
-  if (q.percent == null) return null;
-  return Math.max(0, Math.min(100, 100 - q.percent));
-}
-function amountText(q: RenderedQuota): string | null {
-  if (!q.unlimited || !(typeof q.total === 'number' && q.total > 0)) return null;
-  const remain = typeof q.used === 'number' ? Math.max(0, q.total - q.used) : q.total;
-  return Number.isInteger(remain) ? String(remain) : remain.toFixed(2);
-}
+/** 状态栏 tooltip 专用：Markdown 里画不了进度条，用方块字符凑一个。 */
 function asciiBar(remainingPercent: number, width = 10): string {
   const filled = Math.max(0, Math.min(width, Math.round((remainingPercent / 100) * width)));
   return '█'.repeat(filled) + '░'.repeat(width - filled);
-}
-/** 还剩多久重置，跟 media/app.js 里同名函数保持一致的格式（"5h0m 后"）。 */
-function timeUntil(iso?: string): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
-  const diff = Math.floor((d.getTime() - Date.now()) / 1000);
-  if (diff <= 0) return '已重置';
-  const days = Math.floor(diff / 86400);
-  const hours = Math.floor((diff % 86400) / 3600);
-  const mins = Math.floor((diff % 3600) / 60);
-  if (days > 0) return `${days}d${hours}h`;
-  if (hours > 0) return `${hours}h${mins}m`;
-  return `${mins}m`;
 }
 
 function escapeMd(text: string): string {

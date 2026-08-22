@@ -1,0 +1,22 @@
+{
+  "name": "9router-quota-chrome",
+  "version": "0.1.1",
+  "private": true,
+  "description": "9Router Quota 的 Chromium 系浏览器扩展（Chrome / Edge / 360 等）",
+  "scripts": {
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "node esbuild.js --production && node zip.js",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "node check-assets.js"
+  },
+  "dependencies": {
+    "@9router-quota/core": "*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.270",
+    "@types/node": "^20.14.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.4"
+  }
+}

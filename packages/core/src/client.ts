@@ -2,12 +2,33 @@ import type { AccountQuota, Connection, RecentRequest, Usage } from './types';
 
 export class LoginError extends Error {}
 
+/**
+ * 会话凭据的持有方式，各宿主不同：
+ * - 'manual'（Node / VSCode 扩展主机）：自己从 set-cookie 里抠出会话串，逐次手动带上
+ *   Cookie 请求头。Node 的 fetch 没有 cookie 罐，只能这样。
+ * - 'container'（浏览器扩展 / WebView）：Cookie 与 set-cookie 都是 forbidden header，
+ *   手动设了会被静默丢弃；凭据由浏览器自己收下并携带，我们只需 credentials: 'include'。
+ */
+export type AuthMode = 'manual' | 'container';
+
+/**
+ * 补全并归一化服务地址：允许用户只填主机名（默认按 http 处理，自建 9Router 多数没证书），
+ * 已显式写 http:// 或 https:// 的原样保留，末尾斜杠去掉。
+ */
+export function normalizeBaseUrl(input: string): string {
+  const trimmed = input.trim().replace(/\/+$/, '');
+  if (!trimmed) return '';
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
+}
+
 export class NineRouterClient {
   private baseUrl: string;
+  private authMode: AuthMode;
   private cookie: string | null = null;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl.replace(/\/+$/, '');
+  constructor(baseUrl: string, authMode: AuthMode = 'manual') {
+    this.baseUrl = normalizeBaseUrl(baseUrl);
+    this.authMode = authMode;
   }
 
   async login(password: string): Promise<void> {
@@ -15,8 +36,10 @@ export class NineRouterClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
+      ...this.credentials(),
     });
     if (!res.ok) throw new LoginError('登录失败，请检查地址和密码');
+    if (this.authMode === 'container') return; // 凭据已由浏览器收下
 
     const cookies = (res.headers as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
     const raw = cookies[0] ?? res.headers.get('set-cookie');
@@ -24,7 +47,17 @@ export class NineRouterClient {
     this.cookie = raw.split(';')[0];
   }
 
+  /**
+   * container 模式下让宿主自动带上凭据；manual 模式不需要（也无此概念）。
+   * 返回值写成字面量类型而不是 DOM 的 RequestCredentials：core 的 lib 只有 ES2022，
+   * 为一个类型名把整个 DOM lib 引进来不划算。
+   */
+  private credentials(): { credentials?: 'include' } {
+    return this.authMode === 'container' ? { credentials: 'include' } : {};
+  }
+
   private headers(): Record<string, string> {
+    if (this.authMode === 'container') return {};
     if (!this.cookie) throw new LoginError('尚未登录');
     return { Cookie: this.cookie };
   }
@@ -36,7 +69,7 @@ export class NineRouterClient {
     do {
       const res = await fetch(
         `${this.baseUrl}/api/providers/client?page=${page}&pageSize=500&accountStatus=all`,
-        { headers: this.headers() }
+        { headers: this.headers(), ...this.credentials() }
       );
       const data = (await res.json()) as { connections?: Connection[]; pagination?: { totalPages?: number } };
       connections.push(...(data.connections ?? []));
@@ -50,6 +83,7 @@ export class NineRouterClient {
     try {
       const res = await fetch(`${this.baseUrl}/api/usage/${encodeURIComponent(connectionId)}?force=1`, {
         headers: this.headers(),
+        ...this.credentials(),
       });
       if (!res.ok) return null;
       return (await res.json()) as Usage;
@@ -94,6 +128,7 @@ export class NineRouterClient {
           const res = await fetch(`${this.baseUrl}/api/usage/stream`, {
             headers: { ...this.headers(), Accept: 'text/event-stream' },
             signal: controller.signal,
+            ...this.credentials(),
           });
           if (!res.ok || !res.body) throw new Error(`stream http ${res.status}`);
           const reader = res.body.getReader();

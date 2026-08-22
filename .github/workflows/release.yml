@@ -26,9 +26,10 @@ jobs:
       - name: Build core package
         run: npm run build -w packages/core
 
-      # VSIX 版本来自扩展 package.json，而不是 Git tag。CI 在临时工作区把 v 后面的 SemVer
-      # 写进 manifest，不提交、不回推；因此 v0.2.0 永远产出 9router-quota-0.2.0.vsix。
-      - name: Sync extension version from tag
+      # 版本来自各扩展 package.json，而不是 Git tag。CI 在临时工作区把 v 后面的 SemVer
+      # 写进 manifest，不提交、不回推；chrome 包的 manifest.json 与 package.json 必须
+      # 同步改（check-assets.js 强制两者一致，漏改一个打包就会失败）。
+      - name: Sync extension versions from tag
         shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -37,6 +38,8 @@ jobs:
             exit 1
           fi
           npm version "$VERSION" --workspace=9router-quota --no-git-tag-version
+          npm version "$VERSION" --workspace=9router-quota-chrome --no-git-tag-version
+          node -e "const fs=require('fs');const f='packages/chrome-extension/manifest.json';const m=JSON.parse(fs.readFileSync(f));m.version='$VERSION';fs.writeFileSync(f,JSON.stringify(m,null,2)+'\n')"
 
       # 走 npm run package 而不是直接调 vsce：那个脚本带上了 --baseImagesUrl，把 README
       # 里的相对截图路径重写成 raw.githubusercontent.com 绝对地址。vsce 默认按仓库根解析
@@ -48,8 +51,20 @@ jobs:
           npm run package
           test -f "9router-quota-${GITHUB_REF_NAME#v}.vsix"
 
-      - name: Create GitHub Release and upload vsix
+      # chromium 扩展没有 vsce 那样的官方打包工具，zip.js 只收集运行时文件
+      # （manifest/popup/dist/images），上架应用店或手动加载都用它。
+      - name: Package chromium extension
+        shell: bash
+        run: |
+          cd packages/chrome-extension
+          npm run compile
+          npm run package
+          test -f "9router-quota-chromium-${GITHUB_REF_NAME#v}.zip"
+
+      - name: Create GitHub Release and upload artifacts
         uses: softprops/action-gh-release@v2
         with:
-          files: packages/vscode-extension/*.vsix
+          files: |
+            packages/vscode-extension/*.vsix
+            packages/chrome-extension/*.zip
           generate_release_notes: true

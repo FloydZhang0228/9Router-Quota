@@ -1,0 +1,329 @@
+/*
+ * 与 VSCode 端 media/style.css 同源，仅前置这段变量层：浏览器没有宿主主题变量，
+ * 由 :root 提供默认值。下面 body[data-theme="dark"|"light"] 两套覆盖是源文件自带的，
+ * 变量名刻意保持 --vscode-* 不改——两份样式表要能直接 diff，改配色时一眼看出差异。
+ * "跟随系统"由 popup.ts 读 prefers-color-scheme 后写到 body[data-theme] 上。
+ */
+:root {
+  --vscode-font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  --vscode-foreground: #d6dde8;
+  --vscode-editor-background: #0f1a2e;
+  --vscode-descriptionForeground: #8b96ac;
+  --vscode-input-background: #17233d;
+  --vscode-input-foreground: #d6dde8;
+  --vscode-input-border: #24314f;
+  --vscode-button-background: #2f6fd6;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #4680e0;
+  --vscode-errorForeground: #f48771;
+  --vscode-toolbar-hoverBackground: rgba(90, 130, 200, 0.2);
+  --vscode-widget-border: #24314f;
+  --vscode-badge-background: #2f6fd6;
+  --vscode-badge-foreground: #ffffff;
+  --vscode-scrollbarSlider-background: rgba(120, 150, 200, 0.25);
+  --vscode-charts-green: #4fd17a;
+  --vscode-charts-yellow: #f0d264;
+  --vscode-charts-red: #ef5f5f;
+}
+/* popup 需要固定尺寸：太窄挤不下配额条，太高会被浏览器截断 */
+html, body { width: 380px; height: 520px; }
+
+html, body { height: 100%; }
+body {
+  font-family: var(--vscode-font-family);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  /* 左右留白压到 4px：侧边栏本来就窄，卡片尽量贴边，宽度全留给内容 */
+  padding: 8px 4px;
+  font-size: 13px;
+  margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+/* 面板整体是个 app-shell：工具栏/页脚固定，中间账号列表自己滚动，页脚才能真正贴底 */
+#root { display: flex; flex-direction: column; height: 100%; }
+
+.login { display: flex; flex-direction: column; gap: 6px; }
+.login label { font-size: 11px; color: var(--vscode-descriptionForeground); }
+.login input {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  padding: 4px 6px;
+  border-radius: 2px;
+}
+.hint { color: var(--vscode-descriptionForeground); font-size: 11px; }
+
+button {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  padding: 2px 6px;
+  line-height: 18px;
+  font-size: 13px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+button:hover { background: var(--vscode-button-hoverBackground); }
+
+.status { padding: 12px 0; color: var(--vscode-descriptionForeground); }
+.status.error { color: var(--vscode-errorForeground); }
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  flex: none;
+}
+.toolbar .actions { display: flex; gap: 4px; align-items: center; }
+.toolbar button, .actions button#logout {
+  background: transparent;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  /* 固定的居中方块槽位，不同 Unicode 字形本身粗细/留白不一样，光靠统一 padding 兜不住视觉一致性 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+}
+.toolbar button:hover { background: var(--vscode-toolbar-hoverBackground); }
+/*
+ * 每个 Unicode 字形自身的留白/粗细都不一样，同一字号在视觉上大小不一，只能逐个字形单独调整字号找齐。
+ * #logout 必须写够 (.toolbar .actions button#logout) 的选择器权重，否则会被上面
+ * ".actions button#logout" 那条 13px 规则压制——CSS 选择器权重高的规则永远赢，跟书写顺序无关，
+ * 权重不够时改字号的值完全不会生效（之前两次调整看起来"没反应"就是因为这个）。
+ */
+.toolbar #refresh { font-size: 15px; }
+.toolbar .actions button#logout { font-size: 16px; }
+.view-toggle[data-active="true"] {
+  background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+  border-radius: 4px;
+}
+
+/* overflow-x 没写 —— CSS 规定跟非 visible 的 overflow-y 搭配时会被隐式算成 auto，
+   于是子元素一旦顶宽就会出现横向滚动条，宁可显式禁掉。 */
+.board { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+/* 列方向仍继承 flex-wrap:wrap 时，高度不足会横向开第二列，provider 就会并排。 */
+.board-list { flex-direction: column; flex-wrap: nowrap; width: 100%; }
+.board-list .account { flex: none; width: 100%; box-sizing: border-box; }
+
+.account {
+  background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent);
+  border-radius: 10px;
+  padding: 10px 4px;
+  min-width: 0;
+}
+/*
+ * 圆环视图下账号卡片占满整行，圆环数按可用宽度自适应换行。
+ * min-width:0 是关键：flex item 默认 min-width:auto，宽度不会缩到比内容（这里是
+ * 未换行前 ring-row 的内容宽度）更窄——配额多的账号卡片就会被自己的圆环撑宽，
+ * 导致每个账号卡片宽度不一样（配额多的能挤两列，配额少的只能一列）。
+ */
+/* 圆环卡自带 10px 内边距，账号卡再套 12px 就成了双层留白，一列的宽度白白吃掉一半；
+   这里收到 4px，最左那列圆环几乎贴住账号卡边界。 */
+.board-grid .account { flex: 1 1 100%; min-width: 0; padding: 10px 1px; }
+.account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.account-icon { font-size: 14px; display: inline-flex; flex: none; }
+.account-icon img { width: 16px; height: 16px; object-fit: contain; border-radius: 3px; }
+.account-title {
+  font-weight: 600;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account-tier {
+  flex: none;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 8px;
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 15px;
+  font-weight: 600;
+}
+.account-sub { margin-left: auto; min-width: 0; color: var(--vscode-descriptionForeground); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.account-refresh {
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  padding: 0 2px;
+  font-size: 12px;
+  flex: none;
+}
+.account-refresh:hover { background: var(--vscode-toolbar-hoverBackground); color: var(--vscode-foreground); }
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.icon-fallback {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--vscode-badge-background); color: var(--vscode-badge-foreground);
+  font-size: 10px; font-weight: 700;
+}
+
+/* list view rows */
+.quota-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+/* 字号压到 7px：Antigravity 这类账号的模型名很长（"Claude Sonnet 4.6 (Thinking)"），
+   pill 撑宽后进度条被挤到只剩一小截，缩字号是把宽度还给进度条最直接的办法。 */
+.quota-pill {
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 7px;
+  white-space: nowrap;
+}
+/*
+ * 单层硬切分渐变由 app.js 内联：彩色段=剩余，半透明灰段=已用。
+ * 不用 border 画边框——box-sizing:border-box 下 1px 边框会吃掉内容高度，剩余 100%
+ * 的行整条被彩色盖住、边框看不见，视觉上就比没填满的行更粗（行与行高度不一致的成因）。
+ * 改成 inset 阴影：不占布局高度，每行都是实打实的 6px。
+ */
+.quota-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 140, 0.3);
+  overflow: hidden;
+}
+/*
+ * 百分比与重置时间紧贴成一组，整组顶到卡片右边界。
+ * meta 不能定宽：时间文本长短不一（"4d5h" 4 字符 / "6d19h" 5 字符），定宽后短的那种
+ * 必然在盒子里空出一个字符位——左对齐空在右边（顶不到边界），右对齐空在左边（跟百分比
+ * 拉开）。改成随内容伸缩，短文本自己就贴住右边界；代价是各行进度条右端会差一个字符宽，
+ * 比留缝可接受。percent 仍定宽，保证 "49%" 和 "100%" 的右缘对齐。
+ */
+.quota-percent { font-size: 11px; width: 2.6em; text-align: right; flex: none; margin-right: -2px; }
+.quota-meta {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  flex: none;
+  white-space: nowrap;
+}
+
+/* grid/ring view — 半透明小卡片 + 细环渐变，观感更精致 */
+.ring-row { display: flex; flex-wrap: wrap; gap: 3px; }
+.ring-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  width: 82px; padding: 10px 6px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent);
+  transition: background 0.15s;
+}
+.ring-card:hover { background: color-mix(in srgb, var(--vscode-input-background) 80%, transparent); }
+/*
+ * 圆环用 SVG stroke-dasharray/dashoffset 画，数值在 app.js 里按百分比精确算好——
+ * CSS conic-gradient 那条路线试了两版都在这个环境里没能正确渲染（色标顺序 bug，
+ * 换成双位置色标又整体不显示），SVG 描边是更可靠、没有歧义的标准做法。
+ */
+.ring { position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+.ring svg { position: absolute; inset: 0; transform: rotate(-90deg); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18)); }
+.ring-track { fill: none; stroke: rgba(128, 128, 140, 0.25); stroke-width: 4; }
+.ring-fill {
+  fill: none;
+  stroke: var(--vscode-charts-green);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s;
+}
+.ring-fill[data-level="amber"] { stroke: var(--vscode-charts-yellow); }
+.ring-fill[data-level="red"] { stroke: var(--vscode-charts-red); }
+.ring-fill[data-level="none"] { stroke: transparent; }
+.ring-text {
+  position: relative;
+  font-size: 11px; font-weight: 600; line-height: 1;
+  padding: 0 2px; text-align: center;
+}
+.ring-label {
+  font-size: 10px; text-align: center; color: var(--vscode-descriptionForeground);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 72px;
+}
+.ring-meta {
+  font-size: 9px; text-align: center; color: var(--vscode-descriptionForeground);
+  opacity: 0.75; white-space: nowrap;
+}
+
+/* 主题强制覆盖：跟随系统时按 body 上的 vscode-dark/vscode-light class 解析成下面两套之一 */
+body[data-theme="dark"] {
+  --vscode-foreground: #d6dde8;
+  --vscode-editor-background: #0f1a2e;
+  --vscode-descriptionForeground: #8b96ac;
+  --vscode-input-background: #17233d;
+  --vscode-input-foreground: #d6dde8;
+  --vscode-input-border: #24314f;
+  --vscode-button-background: #2f6fd6;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #4680e0;
+  --vscode-errorForeground: #f48771;
+  --vscode-toolbar-hoverBackground: rgba(90, 130, 200, 0.2);
+  --vscode-widget-border: #24314f;
+  --vscode-badge-background: #2f6fd6;
+  --vscode-badge-foreground: #ffffff;
+  --vscode-scrollbarSlider-background: rgba(120, 150, 200, 0.25);
+  --vscode-charts-green: #4fd17a;
+  --vscode-charts-yellow: #f0d264;
+  --vscode-charts-red: #ef5f5f;
+}
+body[data-theme="light"] {
+  --vscode-foreground: #3b3b3b;
+  --vscode-editor-background: #f0f0f2;
+  --vscode-descriptionForeground: #717171;
+  --vscode-input-background: #ffffff;
+  --vscode-input-foreground: #3b3b3b;
+  --vscode-input-border: #d8d8d8;
+  --vscode-button-background: #007acc;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #0062a3;
+  --vscode-errorForeground: #a1260d;
+  --vscode-toolbar-hoverBackground: rgba(120, 120, 120, 0.16);
+  --vscode-widget-border: #e0e0e2;
+  --vscode-badge-background: #e4e4e8;
+  --vscode-badge-foreground: #3b3b3b;
+  --vscode-scrollbarSlider-background: rgba(0, 0, 0, 0.12);
+  --vscode-charts-green: #2e8b3d;
+  --vscode-charts-yellow: #d4a72c;
+  --vscode-charts-red: #c0392b;
+}
+
+/*
+ * 底部“最近请求”小状态条：flex:none 的固定页脚，不在 .board 的滚动区域内，天然贴底。
+ * 固定 min-height 让它从加载中到有数据再到清空，位置始终稳定，不会“空降”或来回跳。
+ */
+.recent-footer {
+  flex: none;
+  min-height: 34px;
+  margin-top: 10px;
+  padding: 6px 2px 2px;
+  border-top: 1px solid var(--vscode-widget-border, transparent);
+}
+.recent-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.recent-model {
+  color: var(--vscode-foreground);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 45%;
+}
+.recent-tokens { flex: 1; text-align: right; }
+.recent-tokens b { font-weight: 800; }
+.recent-time { flex: none; }
