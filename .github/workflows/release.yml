@@ -70,8 +70,9 @@ jobs:
           cd packages/miniprogram
           npm run build:mp-weixin
           cd dist/build/mp-weixin
-          zip -r "../../../../../9router-quota-mp-weixin-${VERSION}.zip" .
-          test -f "../../../9router-quota-mp-weixin-${VERSION}.zip"
+          zip -r "../../../9router-quota-mp-weixin-${VERSION}.zip" .
+          cd ../../..
+          test -f "9router-quota-mp-weixin-${VERSION}.zip"
 
       - name: Create GitHub Release and upload artifacts
         uses: softprops/action-gh-release@v2
