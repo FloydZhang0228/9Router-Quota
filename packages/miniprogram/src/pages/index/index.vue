@@ -25,10 +25,10 @@ const recentRows = ref<PolledLogRow[]>([]);
 const recentLoaded = ref(false);
 const refreshing = ref(false);
 const theme = ref<'system' | 'dark' | 'light'>((uni.getStorageSync(THEME_KEY) as any) || 'system');
+const sysTheme = ref<string | undefined>((uni.getSystemInfoSync() as any)?.theme);
 const resolvedTheme = computed(() => {
   if (theme.value !== 'system') return theme.value;
-  const sys = (uni.getSystemInfoSync() as any)?.theme;
-  return sys === 'light' ? 'light' : 'dark';
+  return sysTheme.value === 'light' ? 'light' : 'dark';
 });
 const themeClass = computed(() => 'theme-' + resolvedTheme.value);
 let client: NineRouterClient | null = null;
@@ -148,6 +148,13 @@ function cycleTheme() {
   applyNavbar();
 }
 
+// system 档实时跟随系统切换（微信支持 onThemeChange）；手动档不响应
+const onSysThemeChange = (res: { theme: string }) => {
+  sysTheme.value = res.theme;
+  if (theme.value === 'system') applyNavbar();
+};
+uni.onThemeChange(onSysThemeChange as any);
+
 onMounted(async () => {
   applyNavbar(); // 重启后若存储是 light，导航栏也跟着变浅
   const saved = loadSession();
@@ -171,7 +178,10 @@ onHide(() => stopBackgroundTasks());
 onShow(() => {
   if (status.value === 'ready' && client && !refreshTimer) startBackgroundTasks(baseUrl.value);
 });
-onUnmounted(() => stopBackgroundTasks());
+onUnmounted(() => {
+  stopBackgroundTasks();
+  uni.offThemeChange?.(onSysThemeChange as any);
+});
 </script>
 
 <template>
@@ -236,8 +246,8 @@ onUnmounted(() => stopBackgroundTasks());
 
 <style>
 page { height: 100%; overflow: hidden; background: #0f1a2e; }
-.app-shell.theme-dark { --fg: #d6dde8; --bg: #0f1a2e; --desc: #8b96ac; --input: #17233d; --border: #24314f; --btn: #2f6fd6; --green: #4fd17a; --amber: #f0d264; --red: #ef5f5f; }
-.app-shell.theme-light { --fg: #3b3b3b; --bg: #f0f0f2; --desc: #717171; --input: #ffffff; --border: #d8d8d8; --btn: #007acc; --green: #2e8b3d; --amber: #d4a72c; --red: #c0392b; }
+.app-shell.theme-dark { --fg: #d6dde8; --bg: #0f1a2e; --desc: #8b96ac; --input: #17233d; --border: #24314f; --btn: #2f6fd6; --green: #4fd17a; --amber: #f0d264; --red: #ef5f5f; --badge-bg: #2f6fd6; --badge-fg: #ffffff; }
+.app-shell.theme-light { --fg: #3b3b3b; --bg: #f0f0f2; --desc: #717171; --input: #ffffff; --border: #d8d8d8; --btn: #007acc; --green: #2e8b3d; --amber: #d4a72c; --red: #c0392b; --badge-bg: #e4e4e8; --badge-fg: #3b3b3b; }
 .app-shell { display: flex; flex-direction: column; height: 100%; background: var(--bg, #0f1a2e); }
 .status { padding: 24px; color: var(--desc, #8b96ac); text-align: center; }
 .login-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
@@ -288,7 +298,10 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .account-logo { width: 16px; height: 16px; margin-right: 2px; border-radius: 3px; }
 .account-title { font-size: 12px; font-weight: 600; color: var(--fg, #d6dde8); }
-.account-tier { font-size: 10px; color: var(--desc, #8b96ac); }
+.account-tier {
+  flex: none; background: var(--badge-bg, #2f6fd6); color: var(--badge-fg, #ffffff);
+  border-radius: 8px; padding: 0 6px; font-size: 10px; line-height: 15px; font-weight: 600;
+}
 .account-sub { font-size: 10px; color: var(--desc, #8b96ac); margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
 .ring-row { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>

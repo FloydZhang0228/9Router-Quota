@@ -37,7 +37,11 @@ const color = computed(() => {
 
 <style>
 .quota-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; }
-.quota-pill { font-size: 11px; color: var(--fg, #d6dde8); min-width: 60px; }
+.quota-pill {
+  flex: none; background: var(--badge-bg, #2f6fd6); color: var(--badge-fg, #ffffff);
+  border-radius: 10px; padding: 1px 6px; font-size: 10px; white-space: nowrap;
+  min-width: 0; max-width: 55%; overflow: hidden; text-overflow: ellipsis;
+}
 .quota-track { flex: 1; height: 6px; border-radius: 3px; background: rgba(128, 128, 140, 0.25); overflow: hidden; }
 .quota-track-fill { height: 100%; }
 .quota-percent { font-size: 11px; color: var(--fg, #d6dde8); min-width: 36px; text-align: right; }
