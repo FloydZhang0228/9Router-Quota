@@ -257,7 +257,7 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .status { padding: 24px; color: var(--desc, #8b96ac); text-align: center; }
 .login-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
 .login-card {
-  width: 100%; max-width: 320px; padding: 28px 24px; border-radius: 16px;
+  width: 100%; padding: 28px 20px; border-radius: 16px;
   background: var(--input, #17233d); border: 1px solid var(--border, #24314f); box-sizing: border-box;
 }
 .login-logo {
@@ -270,8 +270,8 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .login-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
 .login-label { font-size: 12px; color: var(--desc, #8b96ac); }
 .login-field input {
-  background: var(--input, #17233d); color: var(--fg, #d6dde8); border: 1px solid var(--border, #24314f); border-radius: 8px;
-  padding: 9px 12px; font-size: 13px; box-sizing: border-box;
+  background: var(--bg, #0f1a2e); color: var(--fg, #d6dde8); border: 1px solid var(--border, #24314f); border-radius: 8px;
+  padding: 10px 12px; font-size: 14px; box-sizing: border-box; width: 100%;
 }
 .login-submit {
   width: 100%; margin-top: 4px; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600;
