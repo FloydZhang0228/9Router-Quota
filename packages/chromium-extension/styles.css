@@ -1,8 +1,8 @@
 /*
- * 与 VSCode 端 media/style.css 同源，仅前置这段变量层：浏览器没有宿主主题变量，
- * 由 :root 提供默认值。下面 body[data-theme="dark"|"light"] 两套覆盖是源文件自带的，
- * 变量名刻意保持 --vscode-* 不改——两份样式表要能直接 diff，改配色时一眼看出差异。
- * "跟随系统"由 popup.ts 读 prefers-color-scheme 后写到 body[data-theme] 上。
+ * 与VSCode端media/style.css同源，仅前置这段变量层：浏览器没有宿主主题变量，
+ * 由 :root提供默认值。下面body[data-theme="dark"|"light"] 两套覆盖是源文件自带的，
+ * 变量名刻意保持 --vscode-* 不改——两份样式表要能直接diff，改配色时一眼看出差异。
+ * "跟随系统"由popup.ts读prefers-color-scheme后写到body[data-theme] 上。
  */
 :root {
   --vscode-font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
@@ -26,37 +26,37 @@
   --vscode-charts-red: #ef5f5f;
 }
 /*
- * popup 尺寸必须写死像素，且只能写一次（不能用 vw/vh 百分比，会陷入"视口高度取决于
- * 文档高度、文档高度又是视口的百分比"的死循环，Chrome 完全量不出该开多高——之前这里
- * 用过 html,body{height:100%}，"第二次打开看不到进度条/圆环"就是这么来的，.board
- * flex:1 被压成 0，首次打开测到的高度全靠时序侥幸）。
- * 这两个数字只是 JS 跑起来之前的兜底默认值：popup.ts 里的 sizePopup() 会在脚本最前面
- * 按屏幕宽度的 1/5（顶到 Chrome 800px 硬上限）重新赋值，这里选一个常见屏幕下大致匹配
- * 的尺寸，避免 JS 生效前闪一下巨大的旧尺寸。
+ * popup尺寸必须写死像素，且只能写一次（不能用vw/vh百分比，会陷入"视口高度取决于
+ * 文档高度、文档高度又是视口的百分比"的死循环，Chrome完全量不出该开多高——之前这里
+ * 用过html,body{height:100%}，"第二次打开看不到进度条/圆环"就是这么来的，.board
+ * flex:1被压成0，首次打开测到的高度全靠时序侥幸）。
+ * 这两个数字只是JS跑起来之前的兜底默认值：popup.ts里的sizePopup() 会在脚本最前面
+ * 按屏幕宽度的1/5（顶到Chrome 800px硬上限）重新赋值，这里选一个常见屏幕下大致匹配
+ * 的尺寸，避免JS生效前闪一下巨大的旧尺寸。
  */
 html, body { width: 400px; height: 600px; }
-/* Chrome 本身不会给 popup 窗口画圆角，能圆的只有文档自己的背景：html 顶格铺满整个
-   popup 视口，圆它的角 + overflow:hidden 裁掉方角，视觉上就是一个圆角窗口。 */
+/* Chrome本身不会给popup窗口画圆角，能圆的只有文档自己的背景：html顶格铺满整个
+   popup视口，圆它的角 + overflow:hidden裁掉方角，视觉上就是一个圆角窗口。 */
 html { border-radius: 12px; overflow: hidden; }
 body {
   font-family: var(--vscode-font-family);
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
-  /* 左右留白压到 4px：侧边栏本来就窄，卡片尽量贴边，宽度全留给内容 */
+  /* 左右留白压到4px：侧边栏本来就窄，卡片尽量贴边，宽度全留给内容 */
   padding: 8px 4px;
   font-size: 13px;
   margin: 0;
   box-sizing: border-box;
   overflow: hidden;
 }
-/* 面板整体是个 app-shell：工具栏/页脚固定，中间账号列表自己滚动，页脚才能真正贴底 */
+/* 面板整体是个app-shell：工具栏/页脚固定，中间账号列表自己滚动，页脚才能真正贴底 */
 #root { display: flex; flex-direction: column; height: 100%; }
 
 /*
- * 登录页——原来是裸的 label+input+button 堆叠在面板顶部，没有品牌标识，下面大片空白，
- * 看着像没做完的表单。改成居中卡片 + logo 徽标 + 加大间距，配色照旧沿用现有暗色系变量，
- * 只在 logo 徽标这一处用回 icon 真实的橙色渐变——克制地留一个记忆点，别处不跟它抢。
- * vscode 端 media/style.css 里是同一份，保持两边能直接 diff。
+ * 登录页——原来是裸的label+input+button堆叠在面板顶部，没有品牌标识，下面大片空白，
+ * 看着像没做完的表单。改成居中卡片 + logo徽标 + 加大间距，配色照旧沿用现有暗色系变量，
+ * 只在logo徽标这一处用回icon真实的橙色渐变——克制地留一个记忆点，别处不跟它抢。
+ * vscode端media/style.css里是同一份，保持两边能直接diff。
  */
 .login-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
 .login-card {
@@ -134,7 +134,7 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   background: transparent;
   color: var(--vscode-foreground);
   font-size: 13px;
-  /* 固定的居中方块槽位，不同 Unicode 字形本身粗细/留白不一样，光靠统一 padding 兜不住视觉一致性 */
+  /* 固定的居中方块槽位，不同Unicode字形本身粗细/留白不一样，光靠统一padding兜不住视觉一致性 */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -144,9 +144,9 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 }
 .toolbar button:hover { background: var(--vscode-toolbar-hoverBackground); }
 /*
- * 每个 Unicode 字形自身的留白/粗细都不一样，同一字号在视觉上大小不一，只能逐个字形单独调整字号找齐。
- * #logout 必须写够 (.toolbar .actions button#logout) 的选择器权重，否则会被上面
- * ".actions button#logout" 那条 13px 规则压制——CSS 选择器权重高的规则永远赢，跟书写顺序无关，
+ * 每个Unicode字形自身的留白/粗细都不一样，同一字号在视觉上大小不一，只能逐个字形单独调整字号找齐。
+ * #logout必须写够 (.toolbar .actions button#logout) 的选择器权重，否则会被上面
+ * ".actions button#logout" 那条13px规则压制——CSS选择器权重高的规则永远赢，跟书写顺序无关，
  * 权重不够时改字号的值完全不会生效（之前两次调整看起来"没反应"就是因为这个）。
  */
 .toolbar #refresh { font-size: 15px; }
@@ -156,18 +156,18 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   border-radius: 4px;
 }
 
-/* 列表/圆环行都已经做了收缩+省略号，正常情况下不该再横向溢出；这里开 auto 只是留个
+/* 列表/圆环行都已经做了收缩+省略号，正常情况下不该再横向溢出；这里开auto只是留个
    兜底——真遇到极端窄屏或超长内容撑破一行时，出现的是滚动条而不是内容被裁掉一截。 */
 .board { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: auto; }
-/* 默认滚动条是操作系统原生样式，跟深色/浅色卡片主题完全不搭；popup 是独立文档（不像
-   VSCode webview 那样宿主会统一换肤滚动条），得自己用 --vscode-scrollbarSlider-background
+/* 默认滚动条是操作系统原生样式，跟深色/浅色卡片主题完全不搭；popup是独立文档（不像
+   VSCode webview那样宿主会统一换肤滚动条），得自己用 --vscode-scrollbarSlider-background
    这套已经声明好但一直没接上的变量画一条细的、跟随主题的滚动条。 */
 .board { scrollbar-width: thin; scrollbar-color: var(--vscode-scrollbarSlider-background) transparent; }
 .board::-webkit-scrollbar { width: 6px; height: 6px; }
 .board::-webkit-scrollbar-track { background: transparent; }
 .board::-webkit-scrollbar-thumb { background: var(--vscode-scrollbarSlider-background); border-radius: 3px; }
-/* popup 有 780px 可用（远宽于 VSCode 侧边栏），列表视图按宽度自动分栏，
-   账号多时不用一直往下滚。auto-fill + minmax 由浏览器算列数，不需要 JS 参与。 */
+/* popup有780px可用（远宽于VSCode侧边栏），列表视图按宽度自动分栏，
+   账号多时不用一直往下滚。auto-fill + minmax由浏览器算列数，不需要JS参与。 */
 .board-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -185,12 +185,12 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 }
 /*
  * 圆环视图下账号卡片占满整行，圆环数按可用宽度自适应换行。
- * min-width:0 是关键：flex item 默认 min-width:auto，宽度不会缩到比内容（这里是
- * 未换行前 ring-row 的内容宽度）更窄——配额多的账号卡片就会被自己的圆环撑宽，
+ * min-width:0是关键：flex item默认min-width:auto，宽度不会缩到比内容（这里是
+ * 未换行前ring-row的内容宽度）更窄——配额多的账号卡片就会被自己的圆环撑宽，
  * 导致每个账号卡片宽度不一样（配额多的能挤两列，配额少的只能一列）。
  */
-/* 圆环卡自带 10px 内边距，账号卡再套 12px 就成了双层留白，一列的宽度白白吃掉一半；
-   这里收到 4px，最左那列圆环几乎贴住账号卡边界。 */
+/* 圆环卡自带10px内边距，账号卡再套12px就成了双层留白，一列的宽度白白吃掉一半；
+   这里收到4px，最左那列圆环几乎贴住账号卡边界。 */
 .board-grid .account { flex: 1 1 100%; min-width: 0; padding: 10px 1px; }
 .account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .account-icon { font-size: 14px; display: inline-flex; flex: none; }
@@ -239,10 +239,10 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   padding: 4px 0;
 }
 /*
- * VSCode 侧边栏那边压到 7px 是被宽度逼的；popup 每列有 340px，恢复到能正常阅读的字号。
+ * VSCode侧边栏那边压到7px是被宽度逼的；popup每列有340px，恢复到能正常阅读的字号。
  * 但模型名长短不一（"Gemini 3.5 Flash (Medium)" 这种能顶到很长），字号固定就总有极端
- * 情况会把行撑宽出卡片——min-width:0 让它在 flex 行里能缩到比内容还窄，配合 ellipsis
- * 超出部分显示省略号，而不是把整行顶出容器右边界被硬裁掉一截文字。max-width 留出至少
+ * 情况会把行撑宽出卡片——min-width:0让它在flex行里能缩到比内容还窄，配合ellipsis
+ * 超出部分显示省略号，而不是把整行顶出容器右边界被硬裁掉一截文字。max-width留出至少
  * 一半宽度给进度条和百分比，不会被长名字全占满。
  */
 .quota-pill {
@@ -258,10 +258,10 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   text-overflow: ellipsis;
 }
 /*
- * 单层硬切分渐变由 app.js 内联：彩色段=剩余，半透明灰段=已用。
- * 不用 border 画边框——box-sizing:border-box 下 1px 边框会吃掉内容高度，剩余 100%
+ * 单层硬切分渐变由app.js内联：彩色段=剩余，半透明灰段=已用。
+ * 不用border画边框——box-sizing:border-box下1px边框会吃掉内容高度，剩余100%
  * 的行整条被彩色盖住、边框看不见，视觉上就比没填满的行更粗（行与行高度不一致的成因）。
- * 改成 inset 阴影：不占布局高度，每行都是实打实的 6px。
+ * 改成inset阴影：不占布局高度，每行都是实打实的6px。
  */
 .quota-track {
   flex: 1;
@@ -272,10 +272,10 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 }
 /*
  * 百分比与重置时间紧贴成一组，整组顶到卡片右边界。
- * meta 不能定宽：时间文本长短不一（"4d5h" 4 字符 / "6d19h" 5 字符），定宽后短的那种
+ * meta不能定宽：时间文本长短不一（"4d5h" 4字符 / "6d19h" 5字符），定宽后短的那种
  * 必然在盒子里空出一个字符位——左对齐空在右边（顶不到边界），右对齐空在左边（跟百分比
  * 拉开）。改成随内容伸缩，短文本自己就贴住右边界；代价是各行进度条右端会差一个字符宽，
- * 比留缝可接受。percent 仍定宽，保证 "49%" 和 "100%" 的右缘对齐。
+ * 比留缝可接受。percent仍定宽，保证 "49%" 和 "100%" 的右缘对齐。
  */
 .quota-percent { font-size: 11px; width: 2.6em; text-align: right; flex: none; margin-right: -2px; }
 .quota-meta {
@@ -287,8 +287,8 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 
 /*
  * grid/ring view — 半透明小卡片 + 细环渐变，观感更精致。
- * flex-wrap 按固定卡片宽度硬换行，凑不满整行时末尾会留一截空白（宽度不能整除时必然如此）。
- * 换成跟 .board-list 同款的 grid auto-fill + minmax(1fr)：这一行到底能塞几列由浏览器
+ * flex-wrap按固定卡片宽度硬换行，凑不满整行时末尾会留一截空白（宽度不能整除时必然如此）。
+ * 换成跟 .board-list同款的grid auto-fill + minmax(1fr)：这一行到底能塞几列由浏览器
  * 按可用宽度自己算，多出来的宽度平摊给每一列撑满，末尾不会再留空。
  */
 .ring-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 3px; }
@@ -302,9 +302,9 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 }
 .ring-card:hover { background: color-mix(in srgb, var(--vscode-input-background) 80%, transparent); }
 /*
- * 圆环用 SVG stroke-dasharray/dashoffset 画，数值在 app.js 里按百分比精确算好——
- * CSS conic-gradient 那条路线试了两版都在这个环境里没能正确渲染（色标顺序 bug，
- * 换成双位置色标又整体不显示），SVG 描边是更可靠、没有歧义的标准做法。
+ * 圆环用SVG stroke-dasharray/dashoffset画，数值在app.js里按百分比精确算好——
+ * CSS conic-gradient那条路线试了两版都在这个环境里没能正确渲染（色标顺序bug，
+ * 换成双位置色标又整体不显示），SVG描边是更可靠、没有歧义的标准做法。
  */
 .ring { position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
 .ring svg { position: absolute; inset: 0; transform: rotate(-90deg); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18)); }
@@ -333,7 +333,7 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   opacity: 0.75; white-space: nowrap;
 }
 
-/* 主题强制覆盖：跟随系统时按 body 上的 vscode-dark/vscode-light class 解析成下面两套之一 */
+/* 主题强制覆盖：跟随系统时按body上的vscode-dark/vscode-light class解析成下面两套之一 */
 body[data-theme="dark"] {
   --vscode-foreground: #d6dde8;
   --vscode-editor-background: #0f1a2e;
@@ -376,8 +376,8 @@ body[data-theme="light"] {
 }
 
 /*
- * 底部“最近请求”小状态条：flex:none 的固定页脚，不在 .board 的滚动区域内，天然贴底。
- * 固定 min-height 让它从加载中到有数据再到清空，位置始终稳定，不会“空降”或来回跳。
+ * 底部“最近请求”小状态条：flex:none的固定页脚，不在 .board的滚动区域内，天然贴底。
+ * 固定min-height让它从加载中到有数据再到清空，位置始终稳定，不会“空降”或来回跳。
  */
 .recent-footer {
   flex: none;

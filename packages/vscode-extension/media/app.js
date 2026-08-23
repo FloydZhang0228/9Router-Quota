@@ -1,9 +1,9 @@
 const vscode = acquireVsCodeApi();
 const root = document.getElementById('root');
 
-// 账号数据也进 webview state：retainContextWhenHidden 只是尽力保留，内存紧张时 webview
-// 仍会被销毁重建。重建后若数据不在 state 里，就要干等一次完整刷新（几秒）才有画面，
-// 表现为"切走再切回来变加载中"。state 恢复首帧旧数据，刷新回来无感替换。
+//账号数据也进webview state：retainContextWhenHidden只是尽力保留，内存紧张时webview
+//仍会被销毁重建。重建后若数据不在state里，就要干等一次完整刷新（几秒）才有画面，
+//表现为"切走再切回来变加载中"。state恢复首帧旧数据，刷新回来无感替换。
 const restored = vscode.getState();
 let lastAccounts = restored?.accounts || null;
 let lastUpdatedAt = restored?.updatedAt || null;
@@ -11,13 +11,13 @@ let lastLogs = restored?.logs || [];
 let logsLoaded = restored?.logsLoaded || false;
 let viewMode = restored?.viewMode || 'list';
 let theme = restored?.theme || 'system';
-// 下面这几个 const 必须在文件靠前的位置声明，早于第 ~117 行那次顶层同步 renderQuota() 调用
-// （webview 被销毁重建时，state 里的缓存账号会触发它立刻跑一次首帧）。const 有暂时性死区，
-// renderQuota→renderRing 这条调用链只要碰到一个还没执行到的 const 声明就会 ReferenceError，
-// 而且崩溃发生在顶层脚本里，会连带把这行往后的所有声明都晾在那——此后每次刷新都复现同一个
-// 崩溃，面板永远画不出内容。之前 THEME_ICONS、RING_RADIUS/RING_CIRCUMFERENCE 都在文件后半段
-// 踩过这个坑（后者只在 viewMode 恢复成 'grid' 时才触发，比 THEME_ICONS 那次更隐蔽）。
-// 以后新增的顶层 const，只要可能被首帧渲染路径用到，都得挪到这一段里。
+//下面这几个const必须在文件靠前的位置声明，早于第 ~117行那次顶层同步renderQuota() 调用
+//（webview被销毁重建时，state里的缓存账号会触发它立刻跑一次首帧）。const有暂时性死区，
+//renderQuota→renderRing这条调用链只要碰到一个还没执行到的const声明就会ReferenceError，
+//而且崩溃发生在顶层脚本里，会连带把这行往后的所有声明都晾在那——此后每次刷新都复现同一个
+//崩溃，面板永远画不出内容。之前THEME_ICONS、RING_RADIUS/RING_CIRCUMFERENCE都在文件后半段
+//踩过这个坑（后者只在viewMode恢复成 'grid' 时才触发，比THEME_ICONS那次更隐蔽）。
+//以后新增的顶层const，只要可能被首帧渲染路径用到，都得挪到这一段里。
 const THEME_ICONS = { system: '◐', dark: '🌙', light: '☀️' };
 const RING_RADIUS = 22;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -26,7 +26,7 @@ function setState(patch) {
   vscode.setState({ ...vscode.getState(), ...patch });
 }
 
-/** VS Code 会给 webview 的 body 打上 vscode-dark/vscode-light class，随主题切换自动更新。 */
+/** VS Code会给webview的body打上vscode-dark/vscode-light class，随主题切换自动更新。 */
 function hostIsDark() {
   return document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 }
@@ -40,8 +40,8 @@ new MutationObserver(() => theme === 'system' && applyTheme()).observe(document.
   attributeFilter: ['class'],
 });
 
-// 目录由 extension.ts 通过 data-images 注入，文件名随账号数据下发（acc.logo，源头是 core 的
-// PROVIDERS 表）——这边不再自己判断哪个 provider 有图，免得两处清单分头维护漏掉新 provider。
+//目录由extension.ts通过data-images注入，文件名随账号数据下发（acc.logo，源头是core的
+//PROVIDERS表）——这边不再自己判断哪个provider有图，免得两处清单分头维护漏掉新provider。
 const IMAGES_BASE = root.dataset.images || '';
 function iconFor(logo, service) {
   if (IMAGES_BASE && logo) {
@@ -50,13 +50,13 @@ function iconFor(logo, service) {
   return `<span class="icon-fallback">${escapeHtml((service || '?')[0].toUpperCase())}</span>`;
 }
 
-/** 已用百分比 -> 剩余百分比；无数值时返回 null（unlimited 但仍带数值的，如余额，照样换算）。 */
+/** 已用百分比 -> 剩余百分比；无数值时返回null（unlimited但仍带数值的，如余额，照样换算）。 */
 function remainingOf(q) {
   if (q.percent == null) return null;
   return Math.max(0, Math.min(100, 100 - q.percent));
 }
 
-/** 按剩余百分比配色：>=70 绿、31-69 黄、<=30 红。 */
+/** 按剩余百分比配色：>=70绿、31-69黄、<=30红。 */
 function levelOf(remaining) {
   if (remaining == null) return 'none';
   if (remaining <= 30) return 'red';
@@ -64,7 +64,7 @@ function levelOf(remaining) {
   return 'green';
 }
 
-/** 还剩多久重置，比绝对日期直观（"5h0m 后" 而不是 "08/21 15:52"）。 */
+/** 还剩多久重置，比绝对日期直观（"5h0m后" 而不是 "08/21 15:52"）。 */
 function timeUntil(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
@@ -80,7 +80,7 @@ function timeUntil(iso) {
 
 function timeAgo(iso) {
   const raw = (Date.now() - new Date(iso).getTime()) / 1000;
-  // 服务端/客户端时钟有几秒误差时，刚推过来的最新一条会算出负数——夹到 0 而不是显示空白。
+  //服务端/客户端时钟有几秒误差时，刚推过来的最新一条会算出负数——夹到0而不是显示空白。
   const diff = Math.max(0, Math.floor(Number.isFinite(raw) ? raw : 0));
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
@@ -109,17 +109,17 @@ window.addEventListener('message', (event) => {
     lastLogs = msg.items || [];
     logsLoaded = true;
     setState({ logs: lastLogs, logsLoaded: true });
-    // 页脚容器还不存在时（比如首次登录）才整页重绘，平时只更新这一小块，不打断滚动位置。
+    //页脚容器还不存在时（比如首次登录）才整页重绘，平时只更新这一小块，不打断滚动位置。
     const el = document.getElementById('recent-footer');
     if (el) el.innerHTML = footerRows(lastLogs);
     else if (lastAccounts) renderQuota();
   } else if (msg.type === 'error') renderError(msg.message);
 });
-// 告诉扩展主机"脚本已经跑起来了，消息监听器就位"——resolveWebviewView 里那次 refresh()
-// 如果因为时序问题（webview 还没跑完脚本就 postMessage）被吞掉，靠这个兜底重新拿一次数据。
+//告诉扩展主机"脚本已经跑起来了，消息监听器就位"——resolveWebviewView里那次refresh()
+//如果因为时序问题（webview还没跑完脚本就postMessage）被吞掉，靠这个兜底重新拿一次数据。
 vscode.postMessage({ type: 'ready' });
-// 首帧：state 里有旧数据就直接画（webview 被销毁重建的场景），只有真正的第一次打开
-// 才落到"加载中…"。后台刷新回来会走 renderQuota 无感替换。
+//首帧：state里有旧数据就直接画（webview被销毁重建的场景），只有真正的第一次打开
+//才落到"加载中…"。后台刷新回来会走renderQuota无感替换。
 if (lastAccounts) renderQuota();
 else renderLoading();
 setInterval(() => {
@@ -133,19 +133,19 @@ function renderLogin(baseUrl) {
       <div class="login-card">
         <div class="login-logo">9</div>
         <h1 class="login-title">9Router Quota</h1>
-        <p class="login-subtitle">连接你的 9Router 服务，查看各账号的实时配额</p>
+        <p class="login-subtitle">连接你的9Router服务，查看各账号的实时配额</p>
         <form id="login-form">
           <label class="login-field">
-            <span class="login-label">9Router 地址</span>
+            <span class="login-label">9Router地址</span>
             <input name="baseUrl" type="text" placeholder="http://9router.example.com" value="${escapeHtml(baseUrl)}" required />
           </label>
           <label class="login-field">
-            <span class="login-label">Dashboard 密码</span>
+            <span class="login-label">Dashboard密码</span>
             <input name="password" type="password" required />
           </label>
           <button type="submit" class="login-submit">登录</button>
         </form>
-        <p class="login-hint">密码仅保存在 VSCode 本地凭据库，不会同步或明文落盘。</p>
+        <p class="login-hint">密码仅保存在VSCode本地凭据库，不会同步或明文落盘。</p>
       </div>
     </div>`;
   document.getElementById('login-form').addEventListener('submit', (e) => {
@@ -188,8 +188,8 @@ function cycleTheme() {
 
 function renderQuota() {
   if (!lastAccounts) return;
-  // 整页重绘会连带销毁 .board 那个滚动容器，滚动位置跟着归零——单账号刷新、刷新全部、
-  // 切视图/主题都走这里，用户翻到下面的账号时随便碰一下就被弹回顶部。先存后还。
+  //整页重绘会连带销毁 .board那个滚动容器，滚动位置跟着归零——单账号刷新、刷新全部、
+  //切视图/主题都走这里，用户翻到下面的账号时随便碰一下就被弹回顶部。先存后还。
   const scrollTop = document.querySelector('.board')?.scrollTop ?? 0;
   const time = new Date(lastUpdatedAt).toLocaleTimeString('zh-CN', { hour12: false });
   const body = lastAccounts.length
@@ -211,14 +211,14 @@ function renderQuota() {
   document.getElementById('view-list').addEventListener('click', () => setViewMode('list'));
   document.getElementById('view-grid').addEventListener('click', () => setViewMode('grid'));
   document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
-  // 刷新期间不再清空面板（扩展主机那边已改成有数据就不发 loading），
-  // 改成跟单账号刷新一样让按钮转圈；数据回来 renderQuota 整页重绘，class 自然消失。
+  //刷新期间不再清空面板（扩展主机那边已改成有数据就不发loading），
+  //改成跟单账号刷新一样让按钮转圈；数据回来renderQuota整页重绘，class自然消失。
   document.getElementById('refresh').addEventListener('click', (e) => {
     e.currentTarget.classList.add('spin');
     vscode.postMessage({ type: 'refresh' });
   });
-  // 退出登录不能只发消息：state 里还躺着旧账号数据，webview 若被重建会把已注销的配额
-  // 又画出来。先清掉再交给扩展主机走 needLogin 流程。
+  //退出登录不能只发消息：state里还躺着旧账号数据，webview若被重建会把已注销的配额
+  //又画出来。先清掉再交给扩展主机走needLogin流程。
   document.getElementById('logout').addEventListener('click', () => {
     lastAccounts = null;
     lastUpdatedAt = null;
@@ -252,15 +252,15 @@ function footerRows(logs) {
     .join('');
 }
 
-// 容器本身始终渲染（哪怕暂时没数据），SSE 消息才能直接找到它做局部更新；
-// 也保证页脚位置从一开始就固定，不会等数据来了才“空降”。
+//容器本身始终渲染（哪怕暂时没数据），SSE消息才能直接找到它做局部更新；
+//也保证页脚位置从一开始就固定，不会等数据来了才“空降”。
 function renderRecentFooter() {
   return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}</div>`;
 }
 
 function renderAccount(acc, mode) {
-  // Antigravity/Gemini 等订阅型账号的 plan（如 Plus/Pro）有真实档位意义，跟账号名一起挤在
-  // 右侧小字里容易看不见，升级为服务名旁的小徽标；Claude 那种假 plan 已在扩展主机过滤掉。
+  //Antigravity/Gemini等订阅型账号的plan（如Plus/Pro）有真实档位意义，跟账号名一起挤在
+  //右侧小字里容易看不见，升级为服务名旁的小徽标；Claude那种假plan已在扩展主机过滤掉。
   const tier = acc.plan ? `<span class="account-tier">${escapeHtml(acc.plan)}</span>` : '';
   const sub = acc.account ? escapeHtml(acc.account) : '';
   const body = mode === 'grid' ? acc.quotas.map(renderRing).join('') : acc.quotas.map(renderQuotaRow).join('');
@@ -277,9 +277,9 @@ function renderAccount(acc, mode) {
 }
 
 /**
- * “无硬性上限”但仍带真实余额（如 DeepSeek 信用池：unlimited + total=真实余额，
- * used/total 只是 0/满 的占位比例，看百分比毫无意义）时，直接显示金额本身。
- * total===0 的排除掉是因为部分供应商（如 Vercel 的“已用”行）把 total 固定写死为 0
+ * “无硬性上限”但仍带真实余额（如DeepSeek信用池：unlimited + total=真实余额，
+ * used/total只是0/满 的占位比例，看百分比毫无意义）时，直接显示金额本身。
+ * total===0的排除掉是因为部分供应商（如Vercel的“已用”行）把total固定写死为0
  * 当占位符，那种不是真余额。
  */
 function amountText(q) {
@@ -310,15 +310,15 @@ function renderQuotaRow(q) {
     </div>`;
 }
 
-// SVG 描边环：数值由 JS 直接算好 dasharray/dashoffset，不依赖 CSS conic-gradient 色标
-// 的隐式排序规则（那条路线试了两版都在这个环境里渲染出问题），精确且没有歧义。
+//SVG描边环：数值由JS直接算好dasharray/dashoffset，不依赖CSS conic-gradient色标
+//的隐式排序规则（那条路线试了两版都在这个环境里渲染出问题），精确且没有歧义。
 function renderRing(q) {
   const remaining = remainingOf(q);
   const amount = amountText(q);
   const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
   const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
   const text = amount ?? (q.unlimited && remaining == null ? '∞' : remaining != null ? `${remaining.toFixed(0)}%` : '—');
-  // 彩色弧长 = 剩余比例；半透明轨道 = 已用。颜色也按剩余额度取档。
+  //彩色弧长 = 剩余比例；半透明轨道 = 已用。颜色也按剩余额度取档。
   const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
   return `
     <div class="ring-card">

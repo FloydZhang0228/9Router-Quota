@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <!-- activity bar 图标会被 VS Code 按 alpha 蒙版成单色：背景和文字必须靠透明度分出层次，
-       不能像 images/icon.png 那样带不透明底色矩形，否则蒙版看到的是一整块不透明区域，
+  <!-- activity bar图标会被VS Code按alpha蒙版成单色：背景和文字必须靠透明度分出层次，
+       不能像images/icon.png那样带不透明底色矩形，否则蒙版看到的是一整块不透明区域，
        渲染出来就是纯色方块，"9" 完全看不见。 -->
   <text x="12" y="17" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="800" text-anchor="middle" fill="black">9</text>
 </svg>

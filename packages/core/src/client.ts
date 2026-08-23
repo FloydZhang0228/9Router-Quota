@@ -4,16 +4,16 @@ export class LoginError extends Error {}
 
 /**
  * 会话凭据的持有方式，各宿主不同：
- * - 'manual'（Node / VSCode 扩展主机）：自己从 set-cookie 里抠出会话串，逐次手动带上
- *   Cookie 请求头。Node 的 fetch 没有 cookie 罐，只能这样。
- * - 'container'（浏览器扩展 / WebView）：Cookie 与 set-cookie 都是 forbidden header，
- *   手动设了会被静默丢弃；凭据由浏览器自己收下并携带，我们只需 credentials: 'include'。
+ * - 'manual'（Node / VSCode扩展主机）：自己从set-cookie里抠出会话串，逐次手动带上
+ *   Cookie请求头。Node的fetch没有cookie罐，只能这样。
+ * - 'container'（浏览器扩展 / WebView）：Cookie与set-cookie都是forbidden header，
+ *   手动设了会被静默丢弃；凭据由浏览器自己收下并携带，我们只需credentials: 'include'。
  */
 export type AuthMode = 'manual' | 'container';
 
 /**
- * 补全并归一化服务地址：允许用户只填主机名（默认按 http 处理，自建 9Router 多数没证书），
- * 已显式写 http:// 或 https:// 的原样保留，末尾斜杠去掉。
+ * 补全并归一化服务地址：允许用户只填主机名（默认按http处理，自建9Router多数没证书），
+ * 已显式写http://或https://的原样保留，末尾斜杠去掉。
  */
 export function normalizeBaseUrl(input: string): string {
   const trimmed = input.trim().replace(/\/+$/, '');
@@ -39,18 +39,18 @@ export class NineRouterClient {
       ...this.credentials(),
     });
     if (!res.ok) throw new LoginError('登录失败，请检查地址和密码');
-    if (this.authMode === 'container') return; // 凭据已由浏览器收下
+    if (this.authMode === 'container') return; //凭据已由浏览器收下
 
     const cookies = (res.headers as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
     const raw = cookies[0] ?? res.headers.get('set-cookie');
-    if (!raw) throw new LoginError('登录失败：服务未返回 Cookie');
+    if (!raw) throw new LoginError('登录失败：服务未返回Cookie');
     this.cookie = raw.split(';')[0];
   }
 
   /**
-   * container 模式下让宿主自动带上凭据；manual 模式不需要（也无此概念）。
-   * 返回值写成字面量类型而不是 DOM 的 RequestCredentials：core 的 lib 只有 ES2022，
-   * 为一个类型名把整个 DOM lib 引进来不划算。
+   * container模式下让宿主自动带上凭据；manual模式不需要（也无此概念）。
+   * 返回值写成字面量类型而不是DOM的RequestCredentials：core的lib只有ES2022，
+   * 为一个类型名把整个DOM lib引进来不划算。
    */
   private credentials(): { credentials?: 'include' } {
     return this.authMode === 'container' ? { credentials: 'include' } : {};
@@ -93,8 +93,8 @@ export class NineRouterClient {
   }
 
   /**
-   * 打开 /api/usage/stream 长连接，每次服务端推送就把 recentRequests 喂给 onUpdate。
-   * 这是 9Router 网页仪表盘自己获取“最近请求”的唯一途径（没有对应的一次性 REST 接口）。
+   * 打开 /api/usage/stream长连接，每次服务端推送就把recentRequests喂给onUpdate。
+   * 这是9Router网页仪表盘自己获取“最近请求”的唯一途径（没有对应的一次性REST接口）。
    *
    * 服务端首帧要在这条连接上现算一次全量历史聚合（量大时可能几十秒到一分钟以上），
    * 算失败时又会把异常吞掉、既不报错也不关闭连接，导致这条连接直接挂死、永远收不到
@@ -103,7 +103,7 @@ export class NineRouterClient {
    * 返回值调用后彻底停止（包括取消排队中的重连）。
    */
   openRecentRequestsStream(onUpdate: (items: RecentRequest[]) => void): () => void {
-    const IDLE_TIMEOUT_MS = 90_000; // 比观察到的正常首帧耗时（一分钟出头）留足余量，避免误杀慢但会成功的请求
+    const IDLE_TIMEOUT_MS = 90_000; //比观察到的正常首帧耗时（一分钟出头）留足余量，避免误杀慢但会成功的请求
     const MIN_RETRY_MS = 5_000;
     const MAX_RETRY_MS = 60_000;
 
@@ -137,7 +137,7 @@ export class NineRouterClient {
           for (;;) {
             const { done, value } = await reader.read();
             if (done) break;
-            bumpIdleTimer(); // 只要还在收字节（哪怕是心跳）就说明连接活着，不该被判超时
+            bumpIdleTimer(); //只要还在收字节（哪怕是心跳）就说明连接活着，不该被判超时
             buffer += decoder.decode(value, { stream: true });
             let idx;
             while ((idx = buffer.indexOf('\n\n')) !== -1) {
@@ -152,12 +152,12 @@ export class NineRouterClient {
                   retryDelay = MIN_RETRY_MS;
                 }
               } catch {
-                // 忽略单帧解析失败，继续读下一帧
+                //忽略单帧解析失败，继续读下一帧
               }
             }
           }
         } catch {
-          // 超时 abort / 网络错误 / 服务端非 200，统一走下面的重连
+          //超时abort / 网络错误 / 服务端非200，统一走下面的重连
         } finally {
           clearTimeout(idleTimer);
         }

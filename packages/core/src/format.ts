@@ -24,12 +24,12 @@ export function describeQuota(provider: string, quota: Quota): string {
     parts.push(`${label} ${quota.resetAt}`);
   }
 
-  // unlimited 只表示“无硬性次数上限”，仍可能带有余额等数值，优先展示数值。
+  //unlimited只表示“无硬性次数上限”，仍可能带有余额等数值，优先展示数值。
   if (!parts.length) return quota.unlimited === true ? '无限' : '已获取，未返回数值';
   return parts.join('；');
 }
 
-/** 用于渲染进度条的已用百分比（0-100），无法计算时返回 null（含真正无数据的 unlimited）。 */
+/** 用于渲染进度条的已用百分比（0-100），无法计算时返回null（含真正无数据的unlimited）。 */
 export function quotaPercentUsed(quota: Quota): number | null {
   if (quota.remainingPercentage != null) return Math.max(0, Math.min(100, 100 - quota.remainingPercentage));
   if (typeof quota.used === 'number' && typeof quota.total === 'number' && quota.total > 0) {
@@ -39,12 +39,12 @@ export function quotaPercentUsed(quota: Quota): number | null {
 }
 
 /* ------------------------------------------------------------------------ *
- * 以下是各端渲染都要用的展示层纯函数。原先 VSCode 的扩展主机（状态栏 tooltip）和
+ * 以下是各端渲染都要用的展示层纯函数。原先VSCode的扩展主机（状态栏tooltip）和
  * webview（面板）各抄了一份，加上浏览器扩展会变成第三份——同一个格式改一处漏两处。
- * 统一收在这里：扩展主机与 background 直接 import，webview/popup 由构建打进 bundle。
+ * 统一收在这里：扩展主机与background直接import，webview/popup由构建打进bundle。
  * ------------------------------------------------------------------------ */
 
-/** 渲染用的配额条目：已被各端 formatAccount 拍平过，不再是原始 Quota。 */
+/** 渲染用的配额条目：已被各端formatAccount拍平过，不再是原始Quota。 */
 export interface RenderedQuota {
   percent: number | null;
   unlimited: boolean;
@@ -53,20 +53,20 @@ export interface RenderedQuota {
   resetAt?: string;
 }
 
-/** 已用百分比 -> 剩余百分比；无数值时返回 null（unlimited 但仍带数值的，如余额，照样换算）。 */
+/** 已用百分比 -> 剩余百分比；无数值时返回null（unlimited但仍带数值的，如余额，照样换算）。 */
 export function remainingOf(q: RenderedQuota): number | null {
   if (q.percent == null) return null;
   return Math.max(0, Math.min(100, 100 - q.percent));
 }
 
-/** 余额型配额（unlimited 但带 total）的剩余数字，整数直出、小数保留两位；不适用时 null。 */
+/** 余额型配额（unlimited但带total）的剩余数字，整数直出、小数保留两位；不适用时null。 */
 export function amountText(q: RenderedQuota): string | null {
   if (!q.unlimited || !(typeof q.total === 'number' && q.total > 0)) return null;
   const remain = typeof q.used === 'number' ? Math.max(0, q.total - q.used) : q.total;
   return Number.isInteger(remain) ? String(remain) : remain.toFixed(2);
 }
 
-/** 按剩余百分比配色：>=70 绿、31-69 黄、<=30 红。 */
+/** 按剩余百分比配色：>=70绿、31-69黄、<=30红。 */
 export function levelOf(remaining: number | null): 'green' | 'amber' | 'red' | 'none' {
   if (remaining == null) return 'none';
   if (remaining <= 30) return 'red';
@@ -89,7 +89,7 @@ export function timeUntil(iso?: string): string {
   return `${mins}m`;
 }
 
-/** 相对时间。服务端/客户端时钟差几秒时最新一条会算出负数，夹到 0 而不是显示空白。 */
+/** 相对时间。服务端/客户端时钟差几秒时最新一条会算出负数，夹到0而不是显示空白。 */
 export function timeAgo(iso: string): string {
   const raw = (Date.now() - new Date(iso).getTime()) / 1000;
   const diff = Math.max(0, Math.floor(Number.isFinite(raw) ? raw : 0));

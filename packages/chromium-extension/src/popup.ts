@@ -1,11 +1,11 @@
 import { amountText, levelOf, remainingOf, timeAgo, timeUntil } from '@9router-quota/core';
 
 /**
- * 面板前端。渲染逻辑与 VSCode 端 media/app.js 同源，两处差异只有三点：
+ * 面板前端。渲染逻辑与VSCode端media/app.js同源，两处差异只有三点：
  *   ① 通信：vscode.postMessage / window.onmessage → chrome.runtime.sendMessage / onMessage
- *   ② 偏好存储：vscode.getState/setState → localStorage（popup 每次开都是新页面）
+ *   ② 偏好存储：vscode.getState/setState → localStorage（popup每次开都是新页面）
  *   ③ 主题：宿主不提供 --vscode-* 变量，改用自己的调色板 + prefers-color-scheme
- * 展示层纯函数（remainingOf / amountText / levelOf / timeUntil / timeAgo）已收进 core，
+ * 展示层纯函数（remainingOf / amountText / levelOf / timeUntil / timeAgo）已收进core，
  * 两端共用，不再各抄一份。
  */
 
@@ -34,16 +34,16 @@ interface LogRow {
 }
 
 /**
- * Chrome 原生 action popup 尺寸硬顶在 800x600（没有 API 能突破，超过这个数值不生效）。
- * 宽度按屏幕宽度的 1/5 动态算，高度直接顶满这个硬上限——用户想要的"顶到任务栏"在原生
- * popup 里达不到，600px 已经是能拿到的最大值。必须用绝对像素赋值（不能用 vw/vh 百分比）：
+ * Chrome原生action popup尺寸硬顶在800x600（没有API能突破，超过这个数值不生效）。
+ * 宽度按屏幕宽度的1/5动态算，高度直接顶满这个硬上限——用户想要的"顶到任务栏"在原生
+ * popup里达不到，600px已经是能拿到的最大值。必须用绝对像素赋值（不能用vw/vh百分比）：
  * 百分比会让浏览器陷入"视口高度取决于文档高度、文档高度又是视口的百分比"的死循环，
- * 量不出该开多高——上面 styles.css 里那段 780x580 也是被这个坑逼出来的写死值，这里改成
- * JS 算出来的动态像素，同样必须是绝对值。放在整个脚本最前面，赶在 Chrome 量 popup 尺寸之前。
+ * 量不出该开多高——上面styles.css里那段780x580也是被这个坑逼出来的写死值，这里改成
+ * JS算出来的动态像素，同样必须是绝对值。放在整个脚本最前面，赶在Chrome量popup尺寸之前。
  */
 (function sizePopup(): void {
-  // 420px 地板：屏幕宽度 / 5 在常见 1920px 屏幕上只有 384px，配额行（模型名 pill + 进度条 +
-  // 百分比）在这个宽度下会被挤到裁切——地板保证至少有一列 340px 卡片的呼吸空间。
+  //420px地板：屏幕宽度 / 5在常见1920px屏幕上只有384px，配额行（模型名pill + 进度条 +
+  //百分比）在这个宽度下会被挤到裁切——地板保证至少有一列340px卡片的呼吸空间。
   const width = Math.max(420, Math.min(Math.round(screen.width / 5), 800));
   const height = Math.min(screen.availHeight, 600);
   for (const el of [document.documentElement, document.body]) {
@@ -77,8 +77,8 @@ function iconFor(logo: string | null, service: string): string {
 }
 
 function send(message: Record<string, unknown>): void {
-  // service worker 可能正在冷启动，首帧 sendMessage 偶发 reject；吞掉即可，
-  // background 起来后会主动把数据推过来。
+  //service worker可能正在冷启动，首帧sendMessage偶发reject；吞掉即可，
+  //background起来后会主动把数据推过来。
   chrome.runtime.sendMessage(message).catch(() => {});
 }
 
@@ -99,7 +99,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   } else if (msg.type === 'recentRequests') {
     lastLogs = msg.items || [];
     logsLoaded = true;
-    // 页脚容器还在就只更新这一小块，不整页重绘，免得打断滚动位置。
+    //页脚容器还在就只更新这一小块，不整页重绘，免得打断滚动位置。
     const el = document.getElementById('recent-footer');
     if (el) el.innerHTML = footerRows(lastLogs);
     else if (lastAccounts) renderQuota();
@@ -119,19 +119,19 @@ function renderLogin(baseUrl: string): void {
       <div class="login-card">
         <div class="login-logo">9</div>
         <h1 class="login-title">9Router Quota</h1>
-        <p class="login-subtitle">连接你的 9Router 服务，查看各账号的实时配额</p>
+        <p class="login-subtitle">连接你的9Router服务，查看各账号的实时配额</p>
         <form id="login-form">
           <label class="login-field">
-            <span class="login-label">9Router 地址</span>
+            <span class="login-label">9Router地址</span>
             <input name="baseUrl" type="text" placeholder="http://9router.example.com" value="${escapeHtml(baseUrl)}" required />
           </label>
           <label class="login-field">
-            <span class="login-label">Dashboard 密码</span>
+            <span class="login-label">Dashboard密码</span>
             <input name="password" type="password" required />
           </label>
           <button type="submit" class="login-submit">登录</button>
         </form>
-        <p class="login-hint">地址 http / https 均可。密码保存在浏览器扩展的本地存储中，不会同步到云端。</p>
+        <p class="login-hint">地址http / https均可。密码保存在浏览器扩展的本地存储中，不会同步到云端。</p>
       </div>
     </div>`;
   document.getElementById('login-form')!.addEventListener('submit', (e) => {
@@ -173,7 +173,7 @@ function cycleTheme(): void {
 
 function renderQuota(): void {
   if (!lastAccounts) return;
-  // 整页重绘会销毁 .board 滚动容器，位置归零。先存后还。
+  //整页重绘会销毁 .board滚动容器，位置归零。先存后还。
   const scrollTop = document.querySelector('.board')?.scrollTop ?? 0;
   const time = new Date(lastUpdatedAt).toLocaleTimeString('zh-CN', { hour12: false });
   const body = lastAccounts.length
@@ -225,7 +225,7 @@ function footerRows(logs: LogRow[]): string {
     .join('');
 }
 
-// 容器始终渲染（哪怕暂时没数据），SSE 消息才能直接找到它做局部更新。
+//容器始终渲染（哪怕暂时没数据），SSE消息才能直接找到它做局部更新。
 function renderRecentFooter(): string {
   return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}</div>`;
 }
@@ -270,7 +270,7 @@ function renderQuotaRow(q: Quota): string {
     </div>`;
 }
 
-// SVG 描边环：dasharray/dashoffset 由 JS 直接算，不依赖 CSS conic-gradient 的色标排序。
+//SVG描边环：dasharray/dashoffset由JS直接算，不依赖CSS conic-gradient的色标排序。
 const RING_RADIUS = 22;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 

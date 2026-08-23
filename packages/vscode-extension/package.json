@@ -1,7 +1,7 @@
 {
   "name": "9router-quota",
   "displayName": "9Router Quota",
-  "description": "在 VSCode 侧边栏查看 9Router 各 AI 账号的配额用量",
+  "description": "在VSCode侧边栏查看9Router各AI账号的配额用量",
   "version": "0.1.1",
   "publisher": "FloydZhang0228",
   "license": "MIT",
@@ -19,8 +19,8 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-      { "command": "9router-quota.open", "title": "打开 9Router 配额面板" },
-      { "command": "9router-quota.refresh", "title": "刷新 9Router 配额", "icon": "$(refresh)" }
+      { "command": "9router-quota.open", "title": "打开9Router配额面板" },
+      { "command": "9router-quota.refresh", "title": "刷新9Router配额", "icon": "$(refresh)" }
     ],
     "viewsContainers": {
       "activitybar": [
@@ -38,7 +38,7 @@
         "9routerQuota.baseUrl": {
           "type": "string",
           "default": "",
-          "description": "9Router 服务地址，http/https 均可，例如 http://9router.example.com；省略协议时按 http 处理"
+          "description": "9Router服务地址，http/https均可，例如http://9router.example.com；省略协议时按http处理"
         }
       }
     }

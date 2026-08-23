@@ -7,6 +7,6 @@ node_modules/**
 esbuild.js
 check-assets.js
 tsconfig.json
-# README 里的截图走 GitHub raw 绝对地址（打包时由 --baseImagesUrl 重写），不进包省体积；
-# images/ 下其余图片（扩展图标、providers logo）是运行时资源，必须留在包里。
+#README里的截图走GitHub raw绝对地址（打包时由 --baseImagesUrl重写），不进包省体积；
+#images/ 下其余图片（扩展图标、providers logo）是运行时资源，必须留在包里。
 images/screenshot-*.png

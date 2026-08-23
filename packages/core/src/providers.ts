@@ -1,10 +1,10 @@
 /**
- * provider 单一真源：服务名、公司、logo 文件名一处定义。
+ * provider单一真源：服务名、公司、logo文件名一处定义。
  *
- * 收录范围 = 9router 服务端 `features.usage === true` 的 provider（open-sse/providers/registry/*.js
- * 汇总成 USAGE_SUPPORTED_PROVIDERS），只有它们会出现在 /api/providers/client 的返回里。
- * logo 素材从 9router 的 public/providers/ 拷进 images/providers/，文件名与 key 一致。
- * 服务端新增了而这里还没登记时不会报错：名字回落成 provider 原文，图标走首字母徽标。
+ * 收录范围 = 9router服务端 `features.usage === true` 的provider（open-sse/providers/registry/*.js
+ * 汇总成USAGE_SUPPORTED_PROVIDERS），只有它们会出现在 /api/providers/client的返回里。
+ * logo素材从9router的public/providers/ 拷进images/providers/，文件名与key一致。
+ * 服务端新增了而这里还没登记时不会报错：名字回落成provider原文，图标走首字母徽标。
  */
 export type ProviderInfo = {
   service: string;
@@ -21,8 +21,8 @@ export const PROVIDERS: Record<string, ProviderInfo> = {
   kiro: { service: 'Kiro AI', company: 'Amazon Web Services（AWS）', logo: 'kiro.png' },
   qoder: { service: 'Qoder', company: 'Alibaba', logo: 'qoder.png' },
   ollama: { service: 'Ollama Cloud', company: 'Ollama', logo: 'ollama.png' },
-  glm: { service: 'GLM Coding', company: '智谱 AI', logo: 'glm.png' },
-  'glm-cn': { service: 'GLM China', company: '智谱 AI', logo: 'glm-cn.png' },
+  glm: { service: 'GLM Coding', company: '智谱AI', logo: 'glm.png' },
+  'glm-cn': { service: 'GLM China', company: '智谱AI', logo: 'glm-cn.png' },
   minimax: { service: 'MiniMax Coding', company: 'MiniMax', logo: 'minimax.png' },
   'minimax-cn': { service: 'MiniMax China', company: 'MiniMax', logo: 'minimax-cn.png' },
   'vercel-ai-gateway': { service: 'Vercel AI Gateway', company: 'Vercel', logo: 'vercel-ai-gateway.png' },
@@ -39,7 +39,7 @@ export function describeProvider(provider: string): { service: string; company: 
   return { service: info?.service ?? provider, company: info?.company ?? '未知' };
 }
 
-/** images/providers/ 下的 logo 文件名；未登记的 provider 返回 null，调用方自行兜底。 */
+/** images/providers/ 下的logo文件名；未登记的provider返回null，调用方自行兜底。 */
 export function providerLogo(provider: string): string | null {
   return PROVIDERS[provider]?.logo ?? null;
 }

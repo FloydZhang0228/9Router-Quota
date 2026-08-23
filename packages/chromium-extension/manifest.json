@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "9Router Quota",
   "version": "0.1.1",
-  "description": "在浏览器里查看 9Router 各 AI 账号的配额用量",
+  "description": "在浏览器里查看9Router各AI账号的配额用量",
   "minimum_chrome_version": "102",
   "permissions": ["storage", "alarms"],
   "host_permissions": ["http://*/*", "https://*/*"],

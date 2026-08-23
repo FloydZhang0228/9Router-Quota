@@ -2,7 +2,7 @@
   "name": "9router-quota-chromium",
   "version": "0.1.1",
   "private": true,
-  "description": "9Router Quota 的 Chromium 系浏览器扩展（Chrome / Edge / 360 等）",
+  "description": "9Router Quota的Chromium系浏览器扩展（Chrome / Edge / 360等）",
   "scripts": {
     "compile": "node esbuild.js",
     "watch": "node esbuild.js --watch",

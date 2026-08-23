@@ -1,6 +1,6 @@
 name: Release
 
-# 推 v 开头的 tag（如 v0.1.0）时触发：打包 vsix 并发布成 GitHub Release 附件
+#推v开头的tag（如v0.1.0）时触发：打包vsix并发布成GitHub Release附件
 on:
   push:
     tags: ['v*']
@@ -21,14 +21,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # core 是 workspace 内部包，入口指向 dist/index.js；干净环境里必须先构建它，
-      # 否则扩展打包时解析不到 @9router-quota/core（本地因残留旧 dist 而侥幸通过）。
+      #core是workspace内部包，入口指向dist/index.js；干净环境里必须先构建它，
+      #否则扩展打包时解析不到 @9router-quota/core（本地因残留旧dist而侥幸通过）。
       - name: Build core package
         run: npm run build -w packages/core
 
-      # 版本来自各扩展 package.json，而不是 Git tag。CI 在临时工作区把 v 后面的 SemVer
-      # 写进 manifest，不提交、不回推；chromium 包的 manifest.json 与 package.json 必须
-      # 同步改（check-assets.js 强制两者一致，漏改一个打包就会失败）。
+      #版本来自各扩展package.json，而不是Git tag。CI在临时工作区把v后面的SemVer
+      #写进manifest，不提交、不回推；chromium包的manifest.json与package.json必须
+      #同步改（check-assets.js强制两者一致，漏改一个打包就会失败）。
       - name: Sync extension versions from tag
         shell: bash
         run: |
@@ -41,9 +41,9 @@ jobs:
           npm version "$VERSION" --workspace=9router-quota-chromium --no-git-tag-version
           node -e "const fs=require('fs');const f='packages/chromium-extension/manifest.json';const m=JSON.parse(fs.readFileSync(f));m.version='$VERSION';fs.writeFileSync(f,JSON.stringify(m,null,2)+'\n')"
 
-      # 走 npm run package 而不是直接调 vsce：那个脚本带上了 --baseImagesUrl，把 README
-      # 里的相对截图路径重写成 raw.githubusercontent.com 绝对地址。vsce 默认按仓库根解析
-      # 相对路径，而图片在 packages/vscode-extension/ 下，不给这个前缀会全部裂图。
+      #走npm run package而不是直接调vsce：那个脚本带上了 --baseImagesUrl，把README
+      #里的相对截图路径重写成raw.githubusercontent.com绝对地址。vsce默认按仓库根解析
+      #相对路径，而图片在packages/vscode-extension/ 下，不给这个前缀会全部裂图。
       - name: Package vsix
         shell: bash
         run: |
@@ -51,8 +51,8 @@ jobs:
           npm run package
           test -f "9router-quota-${GITHUB_REF_NAME#v}.vsix"
 
-      # chromium 扩展没有 vsce 那样的官方打包工具，zip.js 只收集运行时文件
-      # （manifest/popup/dist/images），上架应用店或手动加载都用它。
+      #chromium扩展没有vsce那样的官方打包工具，zip.js只收集运行时文件
+      #（manifest/popup/dist/images），上架应用店或手动加载都用它。
       - name: Package chromium extension
         shell: bash
         run: |
