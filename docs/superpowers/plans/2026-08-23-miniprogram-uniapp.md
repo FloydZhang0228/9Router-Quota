@@ -304,11 +304,13 @@ Expected: `format.test.ts passed` 和 `client.test.ts passed` 都打印,退出�
 ```bash
 cd /home/floyd/WorkSpace/9Router-Quota
 npm run build
-cd packages/chromium-extension && node check-assets.js
+cd packages/chromium-extension && node esbuild.js && node check-assets.js
 cd ../vscode-extension && node esbuild.js && node check-assets.js && node test-app-render.mjs
 ```
 
 Expected: 全部命令 exit code 0,没有任何报错。这一步是硬性门槛——不通过不能提交。
+
+(`npm run build`(根目录)只构建 `core` 和 `vscode-extension`,不含 `chromium-extension`——它要自己单独跑一次 `node esbuild.js` 才有 `dist/`,`check-assets.js` 依赖这个产物,漏了这一步会报 `manifest引用的文件不存在: dist/background.js`。)
 
 - [ ] **Step 6: Commit**
 
@@ -1318,7 +1320,7 @@ git commit -m "小程序端补全配额展示 UI：环形图/列表切换/最近
 cd /home/floyd/WorkSpace/9Router-Quota
 npm run build
 cd packages/core && npm run test
-cd ../chromium-extension && node check-assets.js
+cd ../chromium-extension && node esbuild.js && node check-assets.js
 cd ../vscode-extension && node esbuild.js && node check-assets.js && node test-app-render.mjs
 cd ../miniprogram
 npx tsx src/lib/cookieUtils.test.ts
