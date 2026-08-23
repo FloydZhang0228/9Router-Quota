@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { onHide, onShow } from '@dcloudio/uni-app';
-import { NineRouterClient, type AccountQuota } from '@9router-quota/core';
+import { NineRouterClient, type AccountQuota, type RequestAdapter } from '@9router-quota/core';
 import { createUniRequestAdapter } from '../../lib/uniRequestAdapter';
 import { saveSession, loadSession, clearSession } from '../../lib/session';
 import { formatAccount, type RenderedAccount } from '../../lib/formatAccount';
@@ -32,11 +32,14 @@ const resolvedTheme = computed(() => {
 });
 const themeClass = computed(() => 'theme-' + resolvedTheme.value);
 let client: NineRouterClient | null = null;
+let activeAdapter: RequestAdapter | null = null;
 let stopPolling: (() => void) | null = null;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
 function startBackgroundTasks(url: string) {
-  stopPolling = startPolling(url, createUniRequestAdapter(), {}, (rows) => {
+  // 必须复用 doLogin 里的 adapter：它的闭包存着登录后的 cookie，
+  // 字节端 tt.request 不自动带 cookie，新 adapter 会永远拿不到鉴权。
+  stopPolling = startPolling(url, activeAdapter!, (rows) => {
     recentRows.value = rows;
     recentLoaded.value = true;
   });
@@ -59,7 +62,8 @@ function stopBackgroundTasks() {
 }
 
 async function doLogin(url: string, pw: string) {
-  client = new NineRouterClient(url, 'manual', createUniRequestAdapter());
+  activeAdapter = createUniRequestAdapter();
+  client = new NineRouterClient(url, 'manual', activeAdapter);
   await client.login(pw);
   quotas.value = await client.fetchAllQuotas();
   accounts.value = quotas.value.map(formatAccount);
@@ -83,6 +87,7 @@ function onLogout() {
   stopBackgroundTasks();
   clearSession();
   client = null;
+  activeAdapter = null;
   quotas.value = [];
   accounts.value = [];
   recentRows.value = [];
@@ -153,7 +158,7 @@ const onSysThemeChange = (res: { theme: string }) => {
   sysTheme.value = res.theme;
   if (theme.value === 'system') applyNavbar();
 };
-uni.onThemeChange(onSysThemeChange as any);
+uni.onThemeChange?.(onSysThemeChange as any);
 
 onMounted(async () => {
   applyNavbar(); // 重启后若存储是 light，导航栏也跟着变浅

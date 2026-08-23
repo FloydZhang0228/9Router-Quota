@@ -25,7 +25,6 @@ export function parseLogLine(line: string): PolledLogRow | null {
 export function startPolling(
   baseUrl: string,
   adapter: RequestAdapter,
-  cookieHeader: Record<string, string>,
   onUpdate: (rows: PolledLogRow[]) => void,
   intervalMs = 12_000
 ): () => void {
@@ -33,7 +32,7 @@ export function startPolling(
   const tick = async () => {
     if (stopped) return;
     try {
-      const res = await adapter(`${baseUrl}/api/usage/logs`, { headers: cookieHeader });
+      const res = await adapter(`${baseUrl}/api/usage/logs`);
       if (res.ok) {
         const lines = (await res.json()) as string[];
         const rows = lines.map(parseLogLine).filter((r): r is PolledLogRow => r !== null).slice(0, 2);

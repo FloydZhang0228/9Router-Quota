@@ -21,7 +21,7 @@ async function testPolling() {
       ? { ok: false, status: 500, json: async () => [], headers: { get: () => null } } // 模拟一次失败轮询
       : { ok: true, status: 200, json: async () => okBody, headers: { get: () => null } };
   const updates: PolledLogRow[][] = [];
-  const stop = startPolling('http://x', adapter, {}, (rows) => updates.push(rows), 10);
+  const stop = startPolling('http://x', adapter, (rows) => updates.push(rows), 10);
   await new Promise((r) => setTimeout(r, 5)); // 首拍（tick() 立即调用）
   assert.strictEqual(updates.length, 1, 'first tick fires immediately');
   assert.strictEqual(updates[0].length, 1, 'malformed lines filtered out');

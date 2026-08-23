@@ -22,7 +22,6 @@ export function createUniRequestAdapter(): RequestAdapter {
           const lowerHeaders = Object.fromEntries(
             Object.entries(res.header ?? {}).map(([k, v]) => [k.toLowerCase(), v as string])
           );
-          console.log('[uniRequestAdapter] response headers:', JSON.stringify(res.header));
           const extracted = extractSetCookie(lowerHeaders['set-cookie'] ?? null);
           if (extracted) cookie = extracted;
           resolve({
