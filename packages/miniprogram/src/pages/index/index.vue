@@ -199,7 +199,7 @@ onUnmounted(() => {
         <text class="login-subtitle">连接你的9Router服务，查看各账号的实时配额</text>
         <view class="login-field">
           <text class="login-label">9Router地址</text>
-          <input v-model="baseUrl" placeholder="http://9router.example.com" />
+          <input v-model="baseUrl" placeholder="http://9router.example.com" placeholder-class="login-ph" />
         </view>
         <view class="login-field">
           <text class="login-label">Dashboard密码</text>
@@ -271,8 +271,10 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .login-label { font-size: 12px; color: var(--desc, #8b96ac); }
 .login-field input {
   background: var(--bg, #0f1a2e); color: var(--fg, #d6dde8); border: 1px solid var(--border, #24314f); border-radius: 8px;
-  padding: 10px 12px; font-size: 14px; box-sizing: border-box; width: 100%;
+  /* 微信原生 input 不由字号撑高，必须显式给 height，否则内容区塌成 0 只剩 padding */
+  height: 44px; line-height: 22px; padding: 0 12px; font-size: 14px; box-sizing: border-box; width: 100%;
 }
+.login-ph { color: var(--desc, #8b96ac); font-size: 14px; }
 .login-submit {
   width: 100%; margin-top: 4px; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600;
   background: var(--btn, #2f6fd6); color: #fff; border: none;
