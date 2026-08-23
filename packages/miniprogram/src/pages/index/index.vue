@@ -106,12 +106,23 @@ async function onRefreshAll() {
   refreshing.value = false;
 }
 
+function applyNavbar() {
+  const light = resolvedTheme.value === 'light';
+  uni.setNavigationBarColor({
+    frontColor: light ? '#000000' : '#ffffff', // 微信只接受这两个值
+    backgroundColor: light ? '#f0f0f2' : '#0f1a2e',
+    fail: () => {}, // 失败静默——导航栏保持原色是可接受降级
+  });
+}
+
 function cycleTheme() {
   theme.value = theme.value === 'system' ? 'dark' : theme.value === 'dark' ? 'light' : 'system';
   uni.setStorageSync(THEME_KEY, theme.value);
+  applyNavbar();
 }
 
 onMounted(async () => {
+  applyNavbar(); // 重启后若存储是 light，导航栏也跟着变浅
   const saved = loadSession();
   if (!saved) {
     status.value = 'login';
