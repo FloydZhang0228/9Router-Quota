@@ -91,7 +91,34 @@ function onLogout() {
 }
 
 function toggleView() {
-  viewMode.value = viewMode.value === 'list' ? 'grid' : 'list';
+  viewMode.value = 'list';
+}
+
+function toggleViewGrid() {
+  viewMode.value = 'grid';
+}
+
+const refreshingIds = ref<Set<string>>(new Set());
+
+async function onRefreshAccount(id: string) {
+  if (!client || refreshingIds.value.has(id)) return;
+  refreshingIds.value = new Set(refreshingIds.value).add(id);
+  try {
+    const target = quotas.value.find((q) => q.connection.id === id);
+    if (target) {
+      const usage = await client.fetchUsage(id);
+      if (usage?.quotas && Object.keys(usage.quotas).length) {
+        const next = quotas.value.map((q) => (q.connection.id === id ? { connection: q.connection, usage } : q));
+        quotas.value = next;
+        accounts.value = next.map(formatAccount);
+      }
+    }
+  } catch {
+    // 失败保持旧数据
+  }
+  const s = new Set(refreshingIds.value);
+  s.delete(id);
+  refreshingIds.value = s;
 }
 
 async function onRefreshAll() {
@@ -172,10 +199,11 @@ onUnmounted(() => stopBackgroundTasks());
       <view class="toolbar">
         <text class="toolbar-count">{{ accounts.length }} 个账号</text>
         <view class="actions">
-          <button class="action-btn" @tap="onRefreshAll">{{ refreshing ? '⟳ 刷新…' : '⟳ 刷新' }}</button>
-          <button class="action-btn" @tap="toggleView">{{ viewMode === 'list' ? '☰ 列表' : '◎ 网格' }}</button>
-          <button class="action-btn" @tap="cycleTheme">{{ THEME_ICONS[theme] }}</button>
-          <button class="action-btn" @tap="onLogout">⏻ 退出</button>
+          <view class="tool-btn" :class="{ spinning: refreshing }" @tap="onRefreshAll">⟳</view>
+          <view class="tool-btn" :class="{ active: viewMode === 'list' }" @tap="toggleView">☰</view>
+          <view class="tool-btn" :class="{ active: viewMode === 'grid' }" @tap="toggleViewGrid">◎</view>
+          <view class="tool-btn" @tap="cycleTheme">{{ THEME_ICONS[theme] }}</view>
+          <view class="tool-btn tool-btn-exit" @tap="onLogout">⏻</view>
         </view>
       </view>
       <scroll-view scroll-y class="board">
@@ -184,6 +212,11 @@ onUnmounted(() => stopBackgroundTasks());
             <image v-if="acc.logo" class="account-logo" :src="'/static/providers/' + acc.logo" mode="aspectFit" />
             <text class="account-title">{{ acc.service }}</text>
             <text v-if="acc.plan" class="account-tier">{{ acc.plan }}</text>
+            <view
+              class="account-refresh"
+              :class="{ spinning: refreshingIds.has(acc.id) }"
+              @tap.stop="onRefreshAccount(acc.id)"
+            >⟳</view>
             <text class="account-sub">{{ acc.account }}</text>
           </view>
           <view :class="viewMode === 'grid' ? 'ring-row' : ''">
@@ -234,12 +267,22 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .ready { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 8px 6px; }
 .toolbar-count { font-size: 11px; color: var(--desc, #8b96ac); }
-.actions { display: flex; gap: 6px; }
-.action-btn {
-  margin: 0; padding: 4px 10px; border-radius: 6px; font-size: 11px; line-height: 1.6;
-  background: var(--input, #17233d); color: var(--fg, #d6dde8); border: 1px solid var(--border, #24314f);
+.actions { display: flex; gap: 2px; align-items: center; }
+.tool-btn {
+  width: 22px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--fg, #d6dde8);
 }
-.action-btn::after { border: none; }
+.tool-btn.active { background: var(--input, #17233d); }
+.tool-btn-exit { font-size: 16px; }
+.tool-btn.spinning { animation: tool-spin 0.8s linear infinite; }
+@keyframes tool-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.account-refresh {
+  width: 18px; height: 18px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--desc, #8b96ac);
+}
+.account-refresh.spinning { animation: tool-spin 0.8s linear infinite; }
 .board { flex: 1; min-height: 0; }
 .account { padding: 8px 4px 10px; border-bottom: 1px solid var(--border, #24314f); }
 .account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
