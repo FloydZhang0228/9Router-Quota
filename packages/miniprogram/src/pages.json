@@ -1,0 +1,14 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": { "navigationBarTitleText": "9Router Quota" }
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "9Router Quota",
+		"navigationBarBackgroundColor": "#0f1a2e",
+		"backgroundColor": "#0f1a2e"
+	}
+}
