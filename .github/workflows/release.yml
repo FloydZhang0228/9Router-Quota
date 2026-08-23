@@ -61,10 +61,29 @@ jobs:
           npm run package
           test -f "9router-quota-chromium-${GITHUB_REF_NAME#v}.zip"
 
+      #小程序三端产物互不兼容（微信wxml/支付宝axml/字节各自的页面格式），
+      #只能各打一个zip。产物是“导入对应平台开发者工具”的工程目录，不是
+      #应用商店安装包——上架需开发者工具登录+提审，CI替不了最后一步。
+      - name: Package mini-programs
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd packages/miniprogram
+          npm run build:mp-weixin
+          npm run build:mp-alipay
+          npm run build:mp-toutiao
+          for plat in weixin alipay toutiao; do
+            cd "dist/build/mp-$plat"
+            zip -r "../../../../../9router-quota-mp-${plat}-${VERSION}.zip" .
+            cd -
+            test -f "../../9router-quota-mp-${plat}-${VERSION}.zip"
+          done
+
       - name: Create GitHub Release and upload artifacts
         uses: softprops/action-gh-release@v2
         with:
           files: |
             packages/vscode-extension/*.vsix
             packages/chromium-extension/*.zip
+            packages/miniprogram/9router-quota-mp-*.zip
           generate_release_notes: true
