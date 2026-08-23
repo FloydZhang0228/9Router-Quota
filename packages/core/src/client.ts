@@ -11,6 +11,22 @@ export class LoginError extends Error {}
  */
 export type AuthMode = 'manual' | 'container';
 
+export interface AdapterResponse {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+  headers: { get(name: string): string | null; getSetCookie?: () => string[] };
+  body?: ReadableStream<Uint8Array> | null;
+}
+
+export type RequestAdapter = (
+  url: string,
+  init: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal }
+) => Promise<AdapterResponse>;
+
+/** 默认适配器：包一层全局fetch，行为与重构前完全一致，VSCode/Chrome不用改调用代码。 */
+export const fetchAdapter: RequestAdapter = (url, init) => fetch(url, init as RequestInit) as unknown as Promise<AdapterResponse>;
+
 /**
  * 补全并归一化服务地址：允许用户只填主机名（默认按http处理，自建9Router多数没证书），
  * 已显式写http://或https://的原样保留，末尾斜杠去掉。
@@ -25,14 +41,16 @@ export class NineRouterClient {
   private baseUrl: string;
   private authMode: AuthMode;
   private cookie: string | null = null;
+  private adapter: RequestAdapter;
 
-  constructor(baseUrl: string, authMode: AuthMode = 'manual') {
+  constructor(baseUrl: string, authMode: AuthMode = 'manual', adapter: RequestAdapter = fetchAdapter) {
     this.baseUrl = normalizeBaseUrl(baseUrl);
     this.authMode = authMode;
+    this.adapter = adapter;
   }
 
   async login(password: string): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/api/auth/login`, {
+    const res = await this.adapter(`${this.baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
@@ -41,7 +59,7 @@ export class NineRouterClient {
     if (!res.ok) throw new LoginError('登录失败，请检查地址和密码');
     if (this.authMode === 'container') return; //凭据已由浏览器收下
 
-    const cookies = (res.headers as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
+    const cookies = res.headers.getSetCookie?.() ?? [];
     const raw = cookies[0] ?? res.headers.get('set-cookie');
     if (!raw) throw new LoginError('登录失败：服务未返回Cookie');
     this.cookie = raw.split(';')[0];
@@ -67,7 +85,7 @@ export class NineRouterClient {
     let page = 1;
     let totalPages = 1;
     do {
-      const res = await fetch(
+      const res = await this.adapter(
         `${this.baseUrl}/api/providers/client?page=${page}&pageSize=500&accountStatus=all`,
         { headers: this.headers(), ...this.credentials() }
       );
@@ -81,7 +99,7 @@ export class NineRouterClient {
 
   async fetchUsage(connectionId: string): Promise<Usage | null> {
     try {
-      const res = await fetch(`${this.baseUrl}/api/usage/${encodeURIComponent(connectionId)}?force=1`, {
+      const res = await this.adapter(`${this.baseUrl}/api/usage/${encodeURIComponent(connectionId)}?force=1`, {
         headers: this.headers(),
         ...this.credentials(),
       });
