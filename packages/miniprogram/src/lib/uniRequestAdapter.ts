@@ -17,20 +17,19 @@ export function createUniRequestAdapter(): RequestAdapter {
         header: buildCookieHeader(init.headers ?? {}, cookie),
         data: init.body,
         success: (res) => {
-          // 微信/支付宝/字节三端 header 字段大小写、Set-Cookie可见性可能不一致，
-          // 这里都尝试一遍，Task 4 用 console.log 实测确认哪种能拿到。
-          const rawSetCookie =
-            (res.header?.['Set-Cookie'] as string | undefined) ??
-            (res.header?.['set-cookie'] as string | undefined) ??
-            null;
+          // 微信/支付宝/字节三端 header 字段大小写不一致，统一转小写建索引，
+          // get() 和内部摘 Cookie 都走这份小写 map，避免大小写不一致读丢。
+          const lowerHeaders = Object.fromEntries(
+            Object.entries(res.header ?? {}).map(([k, v]) => [k.toLowerCase(), v as string])
+          );
           console.log('[uniRequestAdapter] response headers:', JSON.stringify(res.header));
-          const extracted = extractSetCookie(rawSetCookie);
+          const extracted = extractSetCookie(lowerHeaders['set-cookie'] ?? null);
           if (extracted) cookie = extracted;
           resolve({
             ok: res.statusCode >= 200 && res.statusCode < 300,
             status: res.statusCode,
             json: async () => res.data,
-            headers: { get: (name) => (res.header?.[name] as string | undefined) ?? null },
+            headers: { get: (name) => lowerHeaders[name.toLowerCase()] ?? null },
           });
         },
         fail: (err) => reject(new Error(err.errMsg ?? 'uni.request failed')),
