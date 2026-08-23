@@ -13,9 +13,10 @@ export function createUniRequestAdapter(): RequestAdapter {
     new Promise<AdapterResponse>((resolve, reject) => {
       uni.request({
         url,
-        method: (init.method as any) ?? 'GET',
-        header: buildCookieHeader(init.headers ?? {}, cookie),
-        data: init.body,
+        // init 可省略（如 recentLogsPoller 的 GET），不能直接解引用
+        method: (init?.method as any) ?? 'GET',
+        header: buildCookieHeader(init?.headers ?? {}, cookie),
+        data: init?.body,
         success: (res) => {
           // 微信/支付宝/字节三端 header 字段大小写不一致，统一转小写建索引，
           // get() 和内部摘 Cookie 都走这份小写 map，避免大小写不一致读丢。

@@ -21,7 +21,7 @@ export interface AdapterResponse {
 
 export type RequestAdapter = (
   url: string,
-  init: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal }
+  init?: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal }
 ) => Promise<AdapterResponse>;
 
 /** 默认适配器：包一层全局fetch，行为与重构前完全一致，VSCode/Chrome不用改调用代码。 */
