@@ -16,7 +16,7 @@ defineProps<{ rows: PolledLogRow[]; loaded: boolean }>();
 </template>
 
 <style>
-.recent-footer { border-top: 1px solid #24314f; padding-top: 6px; margin-top: 6px; flex: none; }
-.recent-row { display: flex; justify-content: space-between; font-size: 10px; color: #8b96ac; padding: 2px 0; }
+.recent-footer { border-top: 1px solid var(--border, #24314f); padding-top: 6px; margin-top: 6px; flex: none; }
+.recent-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--desc, #8b96ac); padding: 2px 0; }
 .recent-loading { text-align: center; }
 </style>

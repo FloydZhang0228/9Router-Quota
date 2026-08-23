@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { onHide, onShow } from '@dcloudio/uni-app';
 import { NineRouterClient, type AccountQuota } from '@9router-quota/core';
 import { createUniRequestAdapter } from '../../lib/uniRequestAdapter';
@@ -11,6 +11,8 @@ import QuotaRow from '../../components/QuotaRow.vue';
 import RecentFooter from '../../components/RecentFooter.vue';
 
 const REFRESH_INTERVAL_MS = 5 * 60_000; // 对齐 Chrome 端 REFRESH_INTERVAL_MIN = 5
+const THEME_KEY = 'nineRouterQuota.theme';
+const THEME_ICONS = { system: '◐', dark: '🌙', light: '☀️' } as const;
 
 const baseUrl = ref('');
 const password = ref('');
@@ -21,6 +23,14 @@ const accounts = ref<RenderedAccount[]>([]);
 const viewMode = ref<'list' | 'grid'>('list');
 const recentRows = ref<PolledLogRow[]>([]);
 const recentLoaded = ref(false);
+const refreshing = ref(false);
+const theme = ref<'system' | 'dark' | 'light'>((uni.getStorageSync(THEME_KEY) as any) || 'system');
+const resolvedTheme = computed(() => {
+  if (theme.value !== 'system') return theme.value;
+  const sys = (uni.getSystemInfoSync() as any)?.theme;
+  return sys === 'light' ? 'light' : 'dark';
+});
+const themeClass = computed(() => 'theme-' + resolvedTheme.value);
 let client: NineRouterClient | null = null;
 let stopPolling: (() => void) | null = null;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -84,6 +94,23 @@ function toggleView() {
   viewMode.value = viewMode.value === 'list' ? 'grid' : 'list';
 }
 
+async function onRefreshAll() {
+  if (!client || refreshing.value) return;
+  refreshing.value = true;
+  try {
+    quotas.value = await client.fetchAllQuotas();
+    accounts.value = quotas.value.map(formatAccount);
+  } catch {
+    // 刷新失败保持旧数据
+  }
+  refreshing.value = false;
+}
+
+function cycleTheme() {
+  theme.value = theme.value === 'system' ? 'dark' : theme.value === 'dark' ? 'light' : 'system';
+  uni.setStorageSync(THEME_KEY, theme.value);
+}
+
 onMounted(async () => {
   const saved = loadSession();
   if (!saved) {
@@ -110,7 +137,7 @@ onUnmounted(() => stopBackgroundTasks());
 </script>
 
 <template>
-  <view class="app-shell">
+  <view :class="['app-shell', themeClass]">
     <view v-if="status === 'loading'" class="status">加载中…</view>
     <view v-else-if="status === 'login' || status === 'error'" class="login-screen">
       <view class="login-card">
@@ -134,7 +161,9 @@ onUnmounted(() => stopBackgroundTasks());
       <view class="toolbar">
         <text class="toolbar-count">{{ accounts.length }} 个账号</text>
         <view class="actions">
+          <button class="action-btn" @tap="onRefreshAll">{{ refreshing ? '⟳ 刷新…' : '⟳ 刷新' }}</button>
           <button class="action-btn" @tap="toggleView">{{ viewMode === 'list' ? '☰ 列表' : '◎ 网格' }}</button>
+          <button class="action-btn" @tap="cycleTheme">{{ THEME_ICONS[theme] }}</button>
           <button class="action-btn" @tap="onLogout">⏻ 退出</button>
         </view>
       </view>
@@ -148,10 +177,10 @@ onUnmounted(() => stopBackgroundTasks());
           </view>
           <view :class="viewMode === 'grid' ? 'ring-row' : ''">
             <template v-if="viewMode === 'grid'">
-              <QuotaRing v-for="(q, i) in acc.quotas" :key="i" :quota="q" />
+              <QuotaRing v-for="(q, i) in acc.quotas" :key="i" :quota="q" :theme="resolvedTheme" />
             </template>
             <template v-else>
-              <QuotaRow v-for="(q, i) in acc.quotas" :key="i" :quota="q" />
+              <QuotaRow v-for="(q, i) in acc.quotas" :key="i" :quota="q" :theme="resolvedTheme" />
             </template>
           </view>
         </view>
@@ -162,47 +191,50 @@ onUnmounted(() => stopBackgroundTasks());
 </template>
 
 <style>
-.app-shell { display: flex; flex-direction: column; height: 100%; background: #0f1a2e; }
-.status { padding: 24px; color: #8b96ac; text-align: center; }
+page { height: 100%; overflow: hidden; background: #0f1a2e; }
+.app-shell.theme-dark { --fg: #d6dde8; --bg: #0f1a2e; --desc: #8b96ac; --input: #17233d; --border: #24314f; --btn: #2f6fd6; --green: #4fd17a; --amber: #f0d264; --red: #ef5f5f; }
+.app-shell.theme-light { --fg: #3b3b3b; --bg: #f0f0f2; --desc: #717171; --input: #ffffff; --border: #d8d8d8; --btn: #007acc; --green: #2e8b3d; --amber: #d4a72c; --red: #c0392b; }
+.app-shell { display: flex; flex-direction: column; height: 100%; background: var(--bg, #0f1a2e); }
+.status { padding: 24px; color: var(--desc, #8b96ac); text-align: center; }
 .login-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
 .login-card {
   width: 100%; max-width: 320px; padding: 28px 24px; border-radius: 16px;
-  background: rgba(23, 35, 61, 0.55); border: 1px solid rgba(36, 49, 79, 0.7); box-sizing: border-box;
+  background: var(--input, #17233d); border: 1px solid var(--border, #24314f); box-sizing: border-box;
 }
 .login-logo {
   width: 44px; height: 44px; margin: 0 auto 14px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, #f97815, #c2590a); color: #fff; font-size: 22px; font-weight: 700;
 }
-.login-title { display: block; font-size: 17px; font-weight: 700; text-align: center; color: #d6dde8; }
-.login-subtitle { display: block; margin: 6px 0 22px; font-size: 12px; text-align: center; color: #8b96ac; }
+.login-title { display: block; font-size: 17px; font-weight: 700; text-align: center; color: var(--fg, #d6dde8); }
+.login-subtitle { display: block; margin: 6px 0 22px; font-size: 12px; text-align: center; color: var(--desc, #8b96ac); }
 .login-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-.login-label { font-size: 12px; color: #8b96ac; }
+.login-label { font-size: 12px; color: var(--desc, #8b96ac); }
 .login-field input {
-  background: #17233d; color: #d6dde8; border: 1px solid #24314f; border-radius: 8px;
+  background: var(--input, #17233d); color: var(--fg, #d6dde8); border: 1px solid var(--border, #24314f); border-radius: 8px;
   padding: 9px 12px; font-size: 13px; box-sizing: border-box;
 }
 .login-submit {
   width: 100%; margin-top: 4px; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600;
-  background: #2f6fd6; color: #fff; border: none;
+  background: var(--btn, #2f6fd6); color: #fff; border: none;
 }
 .login-error { display: block; margin-top: 10px; font-size: 12px; color: #f48771; text-align: center; }
-.login-hint { display: block; margin: 16px 0 0; font-size: 11px; line-height: 1.5; text-align: center; color: #8b96ac; }
+.login-hint { display: block; margin: 16px 0 0; font-size: 11px; line-height: 1.5; text-align: center; color: var(--desc, #8b96ac); }
 .ready { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 8px 6px; }
-.toolbar-count { font-size: 11px; color: #8b96ac; }
+.toolbar-count { font-size: 11px; color: var(--desc, #8b96ac); }
 .actions { display: flex; gap: 6px; }
 .action-btn {
   margin: 0; padding: 4px 10px; border-radius: 6px; font-size: 11px; line-height: 1.6;
-  background: #24314f; color: #d6dde8; border: 1px solid #364a70;
+  background: var(--input, #17233d); color: var(--fg, #d6dde8); border: 1px solid var(--border, #24314f);
 }
 .action-btn::after { border: none; }
 .board { flex: 1; min-height: 0; }
-.account { padding: 8px 4px 10px; border-bottom: 1px solid rgba(36, 49, 79, 0.4); }
+.account { padding: 8px 4px 10px; border-bottom: 1px solid var(--border, #24314f); }
 .account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .account-logo { width: 16px; height: 16px; margin-right: 2px; border-radius: 3px; }
-.account-title { font-size: 12px; font-weight: 600; color: #d6dde8; }
-.account-tier { font-size: 10px; color: #8b96ac; }
-.account-sub { font-size: 10px; color: #8b96ac; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
+.account-title { font-size: 12px; font-weight: 600; color: var(--fg, #d6dde8); }
+.account-tier { font-size: 10px; color: var(--desc, #8b96ac); }
+.account-sub { font-size: 10px; color: var(--desc, #8b96ac); margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
 .ring-row { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>
