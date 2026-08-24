@@ -273,7 +273,7 @@ function footerRows(logs) {
 //容器本身始终渲染（哪怕暂时没数据），SSE消息才能直接找到它做局部更新；
 //也保证页脚位置从一开始就固定，不会等数据来了才“空降”。
 function renderRecentFooter() {
-  return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}<div class="footer-version">v${VERSION}</div></div>`;
+  return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}</div>`;
 }
 
 function renderAccount(acc, mode) {

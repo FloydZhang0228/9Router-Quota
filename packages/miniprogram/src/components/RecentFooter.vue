@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { PolledLogRow } from '../lib/recentLogsPoller';
-import { APP_VERSION } from '../version';
 
 defineProps<{ rows: PolledLogRow[]; loaded: boolean }>();
 </script>
@@ -13,7 +12,6 @@ defineProps<{ rows: PolledLogRow[]; loaded: boolean }>();
       <text class="recent-tokens">{{ row.promptTokens }}↑ {{ row.completionTokens }}↓</text>
       <text class="recent-time">{{ row.displayTime }}</text>
     </view>
-    <view class="footer-version">v{{ APP_VERSION }}</view>
   </view>
 </template>
 
@@ -24,7 +22,6 @@ defineProps<{ rows: PolledLogRow[]; loaded: boolean }>();
   border-top: 1px solid var(--border, #24314f); margin-top: 6px; flex: none;
   padding: 6px 4px calc(env(safe-area-inset-bottom) + 6px);
 }
-.footer-version { margin-top: 4px; font-size: 10px; text-align: center; color: var(--desc, #8b96ac); opacity: 0.7; }
 .recent-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--desc, #8b96ac); padding: 2px 0; }
 .recent-loading { text-align: center; }
 </style>
