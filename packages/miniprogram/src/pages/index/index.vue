@@ -9,6 +9,7 @@ import { startPolling, type PolledLogRow } from '../../lib/recentLogsPoller';
 import QuotaRing from '../../components/QuotaRing.vue';
 import QuotaRow from '../../components/QuotaRow.vue';
 import RecentFooter from '../../components/RecentFooter.vue';
+import { APP_VERSION } from '../../version';
 
 const REFRESH_INTERVAL_MS = 5 * 60_000; // 对齐 Chrome 端 REFRESH_INTERVAL_MIN = 5
 const THEME_KEY = 'nineRouterQuota.theme';
@@ -207,11 +208,12 @@ onUnmounted(() => {
         <button class="login-submit" @tap="onSubmit">登录</button>
         <text v-if="status === 'error'" class="login-error">{{ errorMessage }}</text>
         <text class="login-hint">密码保存在小程序本地存储中，不会同步到云端。</text>
+        <text class="login-version">v{{ APP_VERSION }}</text>
       </view>
     </view>
     <view v-else class="ready">
       <view class="toolbar">
-        <text class="toolbar-count">{{ accounts.length }} 个账号</text>
+        <text class="toolbar-count">{{ accounts.length }} 个账号 · v{{ APP_VERSION }}</text>
         <view class="actions">
           <view class="tool-btn" :class="{ spinning: refreshing }" @tap="onRefreshAll"><view class="ti ti-refresh" /></view>
           <view class="tool-btn" :class="{ active: viewMode === 'list' }" @tap="toggleView"><view class="ti ti-list" /></view>
@@ -280,6 +282,7 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 }
 .login-error { display: block; margin-top: 10px; font-size: 12px; color: #f48771; text-align: center; }
 .login-hint { display: block; margin: 16px 0 0; font-size: 11px; line-height: 1.5; text-align: center; color: var(--desc, #8b96ac); }
+.login-version { display: block; margin: 4px 0 0; font-size: 10px; text-align: center; color: var(--desc, #8b96ac); opacity: 0.7; }
 .ready { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 8px 6px; }
 .toolbar-count { font-size: 11px; color: var(--desc, #8b96ac); }

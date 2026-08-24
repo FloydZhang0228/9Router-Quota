@@ -68,6 +68,9 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           cd packages/miniprogram
+          # 把 tag 版本 stamp 进源码常量再构建（version.ts 默认 'dev'，仅本地用）
+          sed -i "s/export const APP_VERSION = '.*';/export const APP_VERSION = '${VERSION}';/" src/version.ts
+          grep -q "APP_VERSION = '${VERSION}'" src/version.ts
           npm run build:mp-weixin
           cd dist/build/mp-weixin
           zip -r "../../../9router-quota-mp-weixin-${VERSION}.zip" .

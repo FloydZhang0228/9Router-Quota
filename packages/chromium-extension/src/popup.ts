@@ -54,6 +54,9 @@ interface LogRow {
 
 const root = document.getElementById('root') as HTMLDivElement;
 
+//版本号来自 manifest.json——CI 打包前把 tag 写进去，本地加载未打包源码时是 package.json 的版本
+const VERSION = chrome.runtime.getManifest().version;
+
 let lastAccounts: Account[] | null = null;
 let lastUpdatedAt = 0;
 let lastLogs: LogRow[] = [];
@@ -132,6 +135,7 @@ function renderLogin(baseUrl: string): void {
           <button type="submit" class="login-submit">登录</button>
         </form>
         <p class="login-hint">地址http / https均可。密码保存在浏览器扩展的本地存储中，不会同步到云端。</p>
+        <p class="login-version">v${VERSION}</p>
       </div>
     </div>`;
   document.getElementById('login-form')!.addEventListener('submit', (e) => {
@@ -180,7 +184,7 @@ function renderQuota(): void {
     : `<div class="status">未获取到任何账号配额</div>`;
   root.innerHTML = `
     <div class="toolbar">
-      <span>更新于 ${time}</span>
+      <span>更新于 ${time} · v${VERSION}</span>
       <div class="actions">
         <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">${toolIconSvg('list')}</button>
         <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">${toolIconSvg('grid')}</button>

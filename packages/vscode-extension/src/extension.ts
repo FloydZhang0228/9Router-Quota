@@ -284,6 +284,8 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
       .with({ query: `v=${cacheBust}` });
     //全工程图片只有images/ 这一处（含providers logo、扩展图标、README截图）。
     const imagesUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'images'));
+    //版本号打进 webview：CI 打包时已把 tag 同步进 package.json，这里读到的就是发布版本
+    const version = vscode.extensions.getExtension('FloydZhang0228.9router-quota')?.packageJSON.version ?? '';
     return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -295,7 +297,7 @@ class QuotaViewProvider implements vscode.WebviewViewProvider {
 <link rel="stylesheet" href="${styleUri}" />
 </head>
 <body>
-  <div id="root" data-images="${imagesUri}"></div>
+  <div id="root" data-images="${imagesUri}" data-version="${version}"></div>
   <script src="${scriptUri}"></script>
 </body>
 </html>`;

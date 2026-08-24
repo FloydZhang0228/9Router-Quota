@@ -1,5 +1,7 @@
 const vscode = acquireVsCodeApi();
 const root = document.getElementById('root');
+//版本号由扩展主机注入 data-version（源头 package.json，CI 打包前已同步 tag）
+const VERSION = root.dataset.version || '';
 
 //工具栏图标：与 core/src/icons.ts 同一份 SVG 路径（webview 静态 JS 没法 import core），
 //改图标时两个文件同步。彻底放弃 Unicode 字形——各平台字体墨迹比例/基线不可控，
@@ -161,6 +163,7 @@ function renderLogin(baseUrl) {
           <button type="submit" class="login-submit">登录</button>
         </form>
         <p class="login-hint">密码仅保存在VSCode本地凭据库，不会同步或明文落盘。</p>
+        <p class="login-version">v${VERSION}</p>
       </div>
     </div>`;
   document.getElementById('login-form').addEventListener('submit', (e) => {
@@ -212,7 +215,7 @@ function renderQuota() {
     : `<div class="status">未获取到任何账号配额</div>`;
   root.innerHTML = `
     <div class="toolbar">
-      <span>更新于 ${time}</span>
+      <span>更新于 ${time} · v${VERSION}</span>
       <div class="actions">
         <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">${toolIconSvg('list')}</button>
         <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">${toolIconSvg('grid')}</button>
