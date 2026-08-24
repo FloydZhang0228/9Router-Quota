@@ -207,11 +207,11 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   line-height: 15px;
   font-weight: 600;
 }
-.account-sub { margin-left: auto; min-width: 0; color: var(--vscode-descriptionForeground); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .account-refresh {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  margin-left: auto;
   background: transparent;
   color: var(--vscode-descriptionForeground);
   padding: 0 2px;
@@ -220,6 +220,21 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 .account-refresh:hover { background: var(--vscode-toolbar-hoverBackground); color: var(--vscode-foreground); }
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/*
+ * 一个provider卡片下多个账号：每个账号自己一块（名字在上、圆环在下）。
+ * 列表视图纵向堆叠，账号间留白隔开；圆环视图用flex-wrap平铺——一行能放下整个下一个
+ * 账号的圆环就放同一行，放不下就换行（flex:0 0 auto不缩水，wrap只会整块换行，
+ * 不会把一个账号的圆环拆成两半分到两行）。
+ */
+.account-groups { display: flex; flex-direction: column; }
+.board-list .account-groups > .account-group + .account-group {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--vscode-widget-border) 50%, transparent);
+}
+.board-grid .account-groups { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 10px 14px; }
+.account-group { flex: 0 0 auto; max-width: 100%; min-width: 0; }
+.account-sub-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.account-name { font-weight: 600; font-size: 12px; max-width: 140px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .icon-fallback {
   display: inline-flex; align-items: center; justify-content: center;
@@ -284,13 +299,13 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 
 /*
  * grid/ring view — 半透明小卡片 + 细环渐变，观感更精致。
- * flex-wrap按固定卡片宽度硬换行，凑不满整行时末尾会留一截空白（宽度不能整除时必然如此）。
- * 换成跟 .board-list同款的grid auto-fill + minmax(1fr)：这一行到底能塞几列由浏览器
- * 按可用宽度自己算，多出来的宽度平摊给每一列撑满，末尾不会再留空。
+ * flex-wrap：同一账号的圆环排成一行，放不下的换到自己这块内部的下一行——
+ * 圆环个数尽量占满一行，剩余凑不满一个圆环宽度的空间就留白，不硬撑。
  */
-.ring-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 3px; }
+.ring-row { display: flex; flex-wrap: wrap; gap: 6px 3px; }
 .ring-card {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
+  flex: 0 0 78px;
   padding: 10px 6px 8px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--vscode-input-background) 55%, transparent);

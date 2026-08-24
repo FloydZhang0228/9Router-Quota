@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { onHide, onShow } from '@dcloudio/uni-app';
-import { NineRouterClient, type AccountQuota, type RequestAdapter } from '@9router-quota/core';
+import {
+  NineRouterClient,
+  formatAccount,
+  groupFormattedByProvider,
+  type AccountQuota,
+  type RenderedAccount,
+  type RequestAdapter,
+} from '@9router-quota/core';
 import { createUniRequestAdapter } from '../../lib/uniRequestAdapter';
 import { saveSession, loadSession, clearSession } from '../../lib/session';
-import { formatAccount, type RenderedAccount } from '../../lib/formatAccount';
 import { startPolling, type PolledLogRow } from '../../lib/recentLogsPoller';
 import QuotaRing from '../../components/QuotaRing.vue';
 import QuotaRow from '../../components/QuotaRow.vue';
@@ -31,6 +37,7 @@ const resolvedTheme = computed(() => {
   return sysTheme.value === 'light' ? 'light' : 'dark';
 });
 const themeClass = computed(() => 'theme-' + resolvedTheme.value);
+const providerGroups = computed(() => groupFormattedByProvider(accounts.value));
 let client: NineRouterClient | null = null;
 let activeAdapter: RequestAdapter | null = null;
 let stopPolling: (() => void) | null = null;
@@ -223,25 +230,37 @@ onUnmounted(() => {
         </view>
       </view>
       <scroll-view scroll-y class="board">
-        <view v-for="acc in accounts" :key="acc.id" class="account">
+        <view v-for="group in providerGroups" :key="group.provider" class="account">
           <view class="account-header">
-            <image v-if="acc.logo" class="account-logo" :src="'/static/providers/' + acc.logo" mode="aspectFit" />
-            <text class="account-title">{{ acc.service }}</text>
-            <text v-if="acc.plan" class="account-tier">{{ acc.plan }}</text>
-            <view
-              class="account-refresh"
-              :class="{ spinning: refreshingIds.has(acc.id) }"
-              @tap.stop="onRefreshAccount(acc.id)"
-            ><view class="ti ti-refresh" /></view>
-            <text class="account-sub">{{ acc.account }}</text>
+            <image v-if="group.logo" class="account-logo" :src="'/static/providers/' + group.logo" mode="aspectFit" />
+            <text class="account-title">{{ group.service }}</text>
           </view>
-          <view :class="viewMode === 'grid' ? 'ring-row' : ''">
-            <template v-if="viewMode === 'grid'">
-              <QuotaRing v-for="(q, i) in acc.quotas" :key="i" :quota="q" :theme="resolvedTheme" />
-            </template>
-            <template v-else>
-              <QuotaRow v-for="(q, i) in acc.quotas" :key="i" :quota="q" :theme="resolvedTheme" />
-            </template>
+          <!--
+            一个provider下多个账号：每个账号自己一块，名字在上、圆环/进度条在下
+            （跟单账号一张卡片时的位置一致）。圆环视图下account-groups是flex-wrap，
+            一行放不放得下下一个账号看它整组圆环能不能塞进剩余宽度——放得下同行，
+            放不下整体换到下一行，不会把一个账号的圆环拆到两行。
+          -->
+          <view class="account-groups" :class="{ 'ring-groups': viewMode === 'grid' }">
+            <view v-for="acc in group.accounts" :key="acc.id" class="account-group">
+              <view class="account-sub-header">
+                <text class="account-name">{{ acc.account }}</text>
+                <text v-if="acc.plan" class="account-tier">{{ acc.plan }}</text>
+                <view
+                  class="account-refresh"
+                  :class="{ spinning: refreshingIds.has(acc.id) }"
+                  @tap.stop="onRefreshAccount(acc.id)"
+                ><view class="ti ti-refresh" /></view>
+              </view>
+              <view :class="viewMode === 'grid' ? 'ring-row' : ''">
+                <template v-if="viewMode === 'grid'">
+                  <QuotaRing v-for="(q, i) in acc.quotas" :key="i" :quota="q" :theme="resolvedTheme" />
+                </template>
+                <template v-else>
+                  <QuotaRow v-for="(q, i) in acc.quotas" :key="i" :quota="q" :theme="resolvedTheme" />
+                </template>
+              </view>
+            </view>
           </view>
         </view>
       </scroll-view>
@@ -314,19 +333,31 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .account-refresh {
   width: 18px; height: 18px; border-radius: 3px;
   display: flex; align-items: center; justify-content: center;
+  margin-left: auto;
   color: var(--desc, #8b96ac);
 }
 .account-refresh .ti { width: 11px; height: 11px; }
 .account-refresh.spinning { animation: tool-spin 0.8s linear infinite; }
 .board { flex: 1; min-height: 0; }
 .account { padding: 8px 4px 10px; border-bottom: 1px solid var(--border, #24314f); }
-.account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.account-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 .account-logo { width: 16px; height: 16px; margin-right: 2px; border-radius: 3px; }
 .account-title { font-size: 12px; font-weight: 600; color: var(--fg, #d6dde8); }
 .account-tier {
   flex: none; background: var(--badge-bg, #2f6fd6); color: var(--badge-fg, #ffffff);
   border-radius: 8px; padding: 0 6px; font-size: 10px; line-height: 15px; font-weight: 600;
 }
-.account-sub { font-size: 10px; color: var(--desc, #8b96ac); margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
+/*
+ * 一个provider卡片下多个账号：每个账号自己一块（名字在上、圆环/进度条在下）。
+ * 列表视图纵向堆叠，账号间留白隔开；圆环视图(.ring-groups)用flex-wrap平铺——
+ * 一行能放下整个下一个账号的圆环就放同一行，放不下就换行，不会把一个账号的
+ * 圆环拆到两行。
+ */
+.account-group + .account-group { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border, #24314f); }
+.ring-groups { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 14px; }
+.ring-groups .account-group { flex: none; max-width: 100%; margin-top: 0 !important; padding-top: 0 !important; border-top: none !important; }
+.account-sub-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.account-name { font-size: 11px; font-weight: 600; color: var(--fg, #d6dde8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+/* 圆环视图：同一账号的圆环排成一行，放不下的换到自己这块内部的下一行 */
 .ring-row { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>

@@ -1,9 +1,10 @@
 import assert from 'node:assert';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { amountText, describeQuota, levelOf, quotaPercentUsed, remainingOf, timeAgo, timeUntil } from './format';
+import { amountText, describeQuota, formatAccount, groupByProvider, levelOf, quotaPercentUsed, remainingOf, timeAgo, timeUntil } from './format';
 import { PROVIDERS, describeProvider, providerLogo } from './providers';
 import { normalizeBaseUrl } from './client';
+import type { AccountQuota } from './types';
 
 //服务地址http / https都要照单全收，只补协议和去尾斜杠，不做别的改写。
 assert.strictEqual(normalizeBaseUrl('http://9router.example.com'), 'http://9router.example.com');
@@ -67,5 +68,19 @@ for (const [key, info] of Object.entries(PROVIDERS)) {
 assert.deepStrictEqual(describeProvider('brand-new'), { service: 'brand-new', company: '未知' });
 assert.strictEqual(providerLogo('brand-new'), null);
 assert.strictEqual(providerLogo('claude'), 'claude.png');
+
+//groupByProvider：同provider多account进同一组，组顺序=各provider首次出现顺序
+const acc = (id: string, provider: string): AccountQuota => ({
+  connection: { id, provider, email: `${id}@x.com` },
+  usage: { quotas: { balance: { used: 1, total: 100 } } },
+});
+const groups = groupByProvider([acc('a1', 'deepseek'), acc('c1', 'claude'), acc('a2', 'deepseek')]);
+assert.strictEqual(groups.length, 2);
+assert.strictEqual(groups[0].provider, 'deepseek');
+assert.strictEqual(groups[0].accounts.length, 2);
+assert.strictEqual(groups[1].provider, 'claude');
+assert.strictEqual(groups[1].accounts.length, 1);
+//formatAccount保留provider id（分组要用的键），不再只剩展示名
+assert.strictEqual(formatAccount(acc('a1', 'deepseek')).provider, 'deepseek');
 
 console.log('format.test.ts passed');

@@ -211,7 +211,7 @@ function renderQuota() {
   const scrollTop = document.querySelector('.board')?.scrollTop ?? 0;
   const time = new Date(lastUpdatedAt).toLocaleTimeString('zh-CN', { hour12: false });
   const body = lastAccounts.length
-    ? lastAccounts.map((acc) => renderAccount(acc, viewMode)).join('')
+    ? groupByProvider(lastAccounts).map((g) => renderProviderCard(g, viewMode)).join('')
     : `<div class="status">未获取到任何账号配额</div>`;
   root.innerHTML = `
     <div class="toolbar">
@@ -276,19 +276,51 @@ function renderRecentFooter() {
   return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}</div>`;
 }
 
-function renderAccount(acc, mode) {
+//同provider多账号进同一张卡片，组顺序=各provider首次出现的顺序。与core/src/format.ts的
+//groupFormattedByProvider同一份逻辑（webview静态JS没法import core，手抄一份）。
+function groupByProvider(accounts) {
+  const groups = [];
+  const byProvider = new Map();
+  for (const acc of accounts) {
+    let group = byProvider.get(acc.provider);
+    if (!group) {
+      group = { service: acc.service, logo: acc.logo, accounts: [] };
+      byProvider.set(acc.provider, group);
+      groups.push(group);
+    }
+    group.accounts.push(acc);
+  }
+  return groups;
+}
+
+function renderProviderCard(group, mode) {
+  const inner = group.accounts.map((acc) => renderAccountGroup(acc, mode)).join('');
+  return `
+    <div class="account">
+      <div class="account-header">
+        <span class="account-icon">${iconFor(group.logo, group.service)}</span>
+        <span class="account-title">${escapeHtml(group.service)}</span>
+      </div>
+      <div class="account-groups">${inner}</div>
+    </div>`;
+}
+
+//账号名回到自己那组圆环的正上方（跟原来单账号一张卡片时的位置一致）。
+//圆环视图下.account-groups是flex-wrap：一行放不放得下下一个账号，看这个账号的
+//圆环整组能不能塞进剩余宽度——flex-wrap对不缩水(flex:0 0 auto)的整块天然就是
+//“放得下就同行，放不下就整体换行”，不用手算像素；侧边栏宽度被用户拖拽改变时
+//浏览器重新排布，同样生效。
+function renderAccountGroup(acc, mode) {
   //Antigravity/Gemini等订阅型账号的plan（如Plus/Pro）有真实档位意义，跟账号名一起挤在
   //右侧小字里容易看不见，升级为服务名旁的小徽标；Claude那种假plan已在扩展主机过滤掉。
   const tier = acc.plan ? `<span class="account-tier">${escapeHtml(acc.plan)}</span>` : '';
   const sub = acc.account ? escapeHtml(acc.account) : '';
   const body = mode === 'grid' ? acc.quotas.map(renderRing).join('') : acc.quotas.map(renderQuotaRow).join('');
   return `
-    <div class="account">
-      <div class="account-header">
-        <span class="account-icon">${iconFor(acc.logo, acc.service)}</span>
-        <span class="account-title">${escapeHtml(acc.service)}</span>${tier}
+    <div class="account-group">
+      <div class="account-sub-header">
+        <span class="account-name">${sub}</span>${tier}
         <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">${toolIconSvg("refresh", 12)}</button>
-        <span class="account-sub">${sub}</span>
       </div>
       <div class="${mode === 'grid' ? 'ring-row' : ''}">${body}</div>
     </div>`;

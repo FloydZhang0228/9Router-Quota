@@ -2,14 +2,11 @@ import * as vscode from 'vscode';
 import {
   NineRouterClient,
   amountText,
-  describeProvider,
-  describeQuota,
-  providerLogo,
-  quotaPercentUsed,
+  formatAccount,
   remainingOf,
   timeUntil,
-  type AccountQuota,
   type RecentRequest,
+  type RenderedAccount,
 } from '@9router-quota/core';
 
 const SECRET_KEY = 'nineRouterQuota.password';
@@ -17,33 +14,6 @@ const SECRET_KEY = 'nineRouterQuota.password';
 function getBaseUrl(): string {
   return vscode.workspace.getConfiguration().get<string>('9routerQuota.baseUrl', '').trim();
 }
-
-function formatAccount({ connection, usage }: AccountQuota) {
-  const { service } = describeProvider(connection.provider);
-  const account = connection.email || connection.displayName || connection.name || connection.id;
-  const quotas = Object.entries(usage.quotas ?? {}).map(([key, quota]) => ({
-    name: quota.displayName || quota.name || key,
-    description: describeQuota(connection.provider, quota),
-    percent: quotaPercentUsed(quota),
-    unlimited: quota.unlimited === true,
-    resetAt: quota.resetAt,
-    used: quota.used,
-    total: quota.total,
-  }));
-  //两类假plan都过滤掉：① Claude消费者OAuth通道服务端写死成字符串 "Claude Code"；
-  //② Antigravity等账号在拿不到真实订阅档位时，服务端回退成跟服务名一样的占位字符串
-  //（比如plan就是 "Antigravity"），不是没取到Plus/Pro，是上游确实没有这个数据、
-  //给了个没有信息量的兜底值——原样展示只是把服务名重复一遍，不如不显示。
-  const plan =
-    connection.provider === 'claude' || !usage.plan || usage.plan.toLowerCase() === service.toLowerCase()
-      ? undefined
-      : usage.plan;
-  //logo文件名在这边按PROVIDERS表算好一起下发，webview就不用再维护一份
-  //"哪些provider有图"的清单（那份手抄的Set跟PROVIDERS表两处都得改，漏一处就掉图）。
-  return { id: connection.id, service, account, plan, logo: providerLogo(connection.provider), quotas };
-}
-
-type RenderedAccount = ReturnType<typeof formatAccount>;
 
 /** 状态栏tooltip专用：Markdown里画不了进度条，用方块字符凑一个。 */
 function asciiBar(remainingPercent: number, width = 10): string {

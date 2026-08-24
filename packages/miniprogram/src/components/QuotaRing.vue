@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { levelOf, remainingOf, amountText, timeUntil } from '@9router-quota/core';
-import type { RenderedQuotaItem } from '../lib/formatAccount';
+import { levelOf, remainingOf, amountText, timeUntil, type RenderedQuotaItem } from '@9router-quota/core';
 
 const props = defineProps<{ quota: RenderedQuotaItem; theme?: 'dark' | 'light' }>();
 

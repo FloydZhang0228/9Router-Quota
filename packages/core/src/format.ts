@@ -1,4 +1,5 @@
-import type { Quota } from './types';
+import type { AccountQuota, Quota } from './types';
+import { describeProvider, providerLogo } from './providers';
 
 export function describeQuota(provider: string, quota: Quota): string {
   const unit = quota.unit ? ` ${quota.unit}` : '';
@@ -51,6 +52,80 @@ export interface RenderedQuota {
   used?: number;
   total?: number;
   resetAt?: string;
+}
+
+export interface RenderedQuotaItem extends RenderedQuota {
+  name: string;
+  description: string;
+}
+
+/** 一个account格式化后的渲染数据；provider是id（分组键），service是展示名。 */
+export interface RenderedAccount {
+  id: string;
+  provider: string;
+  service: string;
+  account: string;
+  plan?: string;
+  logo: string | null;
+  quotas: RenderedQuotaItem[];
+}
+
+/**
+ * AccountQuota -> RenderedAccount。原先浏览器扩展background、VSCode扩展主机、
+ * 小程序各抄了一份（同一个格式改一处漏两处），统一收在这里。
+ */
+export function formatAccount({ connection, usage }: AccountQuota): RenderedAccount {
+  const { service } = describeProvider(connection.provider);
+  const account = connection.email || connection.displayName || connection.name || connection.id;
+  const quotas = Object.entries(usage.quotas ?? {}).map(([key, quota]) => ({
+    name: quota.displayName || quota.name || key,
+    description: describeQuota(connection.provider, quota),
+    percent: quotaPercentUsed(quota),
+    unlimited: quota.unlimited === true,
+    resetAt: quota.resetAt,
+    used: quota.used,
+    total: quota.total,
+  }));
+  //两类假plan都过滤掉：①Claude消费者OAuth通道服务端写死成字符串"Claude Code"；
+  //②部分账号拿不到真实订阅档位时，服务端回退成跟服务名一样的占位字符串，原样
+  //展示只是把服务名重复一遍，不如不显示。
+  const plan =
+    connection.provider === 'claude' || !usage.plan || usage.plan.toLowerCase() === service.toLowerCase()
+      ? undefined
+      : usage.plan;
+  return { id: connection.id, provider: connection.provider, service, account, plan, logo: providerLogo(connection.provider), quotas };
+}
+
+export interface RenderedProviderGroup {
+  provider: string;
+  service: string;
+  logo: string | null;
+  accounts: RenderedAccount[];
+}
+
+/**
+ * 按provider id把已格式化的账号分组，同provider多账号进同一组；组顺序=各provider
+ * 首次出现的顺序。扩展的popup/webview拿到的是host端已formatAccount过的扁平数组，
+ * 直接用这个分组；小程序端自己在本地formatAccount，用下面的groupByProvider一步到位。
+ */
+export function groupFormattedByProvider(accounts: RenderedAccount[]): RenderedProviderGroup[] {
+  const groups: RenderedProviderGroup[] = [];
+  const byProvider = new Map<string, RenderedProviderGroup>();
+  for (const rendered of accounts) {
+    let group = byProvider.get(rendered.provider);
+    if (!group) {
+      group = { provider: rendered.provider, service: rendered.service, logo: rendered.logo, accounts: [] };
+      byProvider.set(rendered.provider, group);
+      groups.push(group);
+    }
+    group.accounts.push(rendered);
+  }
+  return groups;
+}
+
+/** AccountQuota原始列表 -> 分组，formatAccount + groupFormattedByProvider的组合。 */
+export function groupByProvider(accounts: AccountQuota[]): RenderedProviderGroup[] {
+  return groupFormattedByProvider(accounts.map(formatAccount));
 }
 
 /** 已用百分比 -> 剩余百分比；无数值时返回null（unlimited但仍带数值的，如余额，照样换算）。 */

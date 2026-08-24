@@ -1,12 +1,9 @@
 import {
   NineRouterClient,
-  describeProvider,
-  describeQuota,
+  formatAccount,
   normalizeBaseUrl,
-  providerLogo,
-  quotaPercentUsed,
-  type AccountQuota,
   type RecentRequest,
+  type RenderedAccount,
 } from '@9router-quota/core';
 
 const STORAGE_KEY = 'nineRouterQuota';
@@ -27,29 +24,6 @@ let lastRendered: RenderedAccount[] = [];
 let lastLogs: RecentRequest[] = [];
 let stopRecentStream: (() => void) | undefined;
 let refreshSeq = 0;
-
-function formatAccount({ connection, usage }: AccountQuota) {
-  const { service } = describeProvider(connection.provider);
-  const account = connection.email || connection.displayName || connection.name || connection.id;
-  const quotas = Object.entries(usage.quotas ?? {}).map(([key, quota]) => ({
-    name: quota.displayName || quota.name || key,
-    description: describeQuota(connection.provider, quota),
-    percent: quotaPercentUsed(quota),
-    unlimited: quota.unlimited === true,
-    resetAt: quota.resetAt,
-    used: quota.used,
-    total: quota.total,
-  }));
-  //与VSCode端同一套过滤：Claude的plan服务端写死成 "Claude Code"；其他账号拿不到
-  //真实档位时会回退成跟服务名一样的占位串，展示出来只是把服务名重复一遍。
-  const plan =
-    connection.provider === 'claude' || !usage.plan || usage.plan.toLowerCase() === service.toLowerCase()
-      ? undefined
-      : usage.plan;
-  return { id: connection.id, service, account, plan, logo: providerLogo(connection.provider), quotas };
-}
-
-type RenderedAccount = ReturnType<typeof formatAccount>;
 
 async function getStored(): Promise<Stored> {
   const bag = await chrome.storage.local.get(STORAGE_KEY);
