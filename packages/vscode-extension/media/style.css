@@ -102,16 +102,16 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   min-width: 22px;
   height: 22px;
   padding: 0;
+  line-height: 1; /* 收束行盒，字形基线摆位不同时不参与居中计算 */
 }
 .toolbar button:hover { background: var(--vscode-toolbar-hoverBackground); }
 /*
- * 每个Unicode字形自身的留白/粗细都不一样，同一字号在视觉上大小不一，只能逐个字形单独调整字号找齐。
- * #logout必须写够 (.toolbar .actions button#logout) 的选择器权重，否则会被上面
- * ".actions button#logout" 那条13px规则压制——CSS选择器权重高的规则永远赢，跟书写顺序无关，
- * 权重不够时改字号的值完全不会生效（之前两次调整看起来"没反应"就是因为这个）。
+ * 视觉等大的根修：统一 13px，glyph 外包一层 .icon-ink，由 app.js 顶部 ICON_INK
+ * 实测墨迹比例给 scale + translateY。原来逐字形猜 font-size 修过两次都反弹——
+ * 跨平台字体不同，猜值收敛不了；scale 不依赖字体度量，只看墨迹比例。
+ * 旋转动画转按钮层，避免 keyframes 的 rotate 覆盖内层 scale。
  */
-.toolbar #refresh { font-size: 15px; }
-.toolbar .actions button#logout { font-size: 16px; }
+.icon-ink { display: inline-block; line-height: 1; }
 .view-toggle[data-active="true"] {
   background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
   border-radius: 4px;

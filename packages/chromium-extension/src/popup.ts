@@ -1,4 +1,4 @@
-import { amountText, levelOf, remainingOf, timeAgo, timeUntil } from '@9router-quota/core';
+import { amountText, iconTransform, levelOf, remainingOf, timeAgo, timeUntil } from '@9router-quota/core';
 
 /**
  * 面板前端。渲染逻辑与VSCode端media/app.js同源，两处差异只有三点：
@@ -183,11 +183,11 @@ function renderQuota(): void {
     <div class="toolbar">
       <span>更新于 ${time}</span>
       <div class="actions">
-        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">☰</button>
-        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">◎</button>
-        <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${THEME_ICONS[theme]}</button>
-        <button id="refresh" title="刷新全部">⟳</button>
-        <button id="logout" title="退出登录">⏻</button>
+        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图"><span class="icon-ink" style="transform:${iconTransform('☰')}">☰</span></button>
+        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图"><span class="icon-ink" style="transform:${iconTransform('◎')}">◎</span></button>
+        <button id="theme-toggle" title="主题：跟随系统/深色/浅色"><span class="icon-ink" style="transform:${iconTransform(THEME_ICONS[theme])}">${THEME_ICONS[theme]}</span></button>
+        <button id="refresh" title="刷新全部"><span class="icon-ink" style="transform:${iconTransform('⟳')}">⟳</span></button>
+        <button id="logout" title="退出登录"><span class="icon-ink" style="transform:${iconTransform('⏻')}">⏻</span></button>
       </div>
     </div>
     <div class="board board-${viewMode}">${body}</div>

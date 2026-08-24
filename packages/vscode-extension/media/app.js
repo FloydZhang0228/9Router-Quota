@@ -1,6 +1,24 @@
 const vscode = acquireVsCodeApi();
 const root = document.getElementById('root');
 
+//工具栏图标墨迹校准：与 core/src/toolIcons.ts 同一份实测数据（webview 静态 JS 没法 import core）。
+//各 Unicode 字形墨迹比例不同，统一字号下视觉大小不一；用 scale 把墨迹缩放到一致，translateY 找平基线。
+//字形数据或比例变更时，两个文件要同步改。
+const ICON_INK = {
+  '☰': { ratio: 0.77, dy: 0.5 },
+  '◎': { ratio: 1.0, dy: 0 },
+  '◐': { ratio: 0.52, dy: -1 },
+  '🌙': { ratio: 0.66, dy: 0 },
+  '☀️': { ratio: 1.0, dy: 0 },
+  '⟳': { ratio: 0.87, dy: 0 },
+  '⏻': { ratio: 0.62, dy: 0 },
+};
+const iconTransform = (glyph, targetEm = 1) => {
+  const { ratio, dy } = ICON_INK[glyph] || { ratio: 1, dy: 0 };
+  return `translateY(${dy}px) scale(${(targetEm / ratio).toFixed(3)})`;
+};
+const icon = (glyph) => `<span class="icon-ink" style="transform:${iconTransform(glyph)}">${glyph}</span>`;
+
 //账号数据也进webview state：retainContextWhenHidden只是尽力保留，内存紧张时webview
 //仍会被销毁重建。重建后若数据不在state里，就要干等一次完整刷新（几秒）才有画面，
 //表现为"切走再切回来变加载中"。state恢复首帧旧数据，刷新回来无感替换。
@@ -199,11 +217,11 @@ function renderQuota() {
     <div class="toolbar">
       <span>更新于 ${time}</span>
       <div class="actions">
-        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">☰</button>
-        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">◎</button>
-        <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${THEME_ICONS[theme]}</button>
-        <button id="refresh" title="刷新全部">⟳</button>
-        <button id="logout" title="退出登录">⏻</button>
+        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">${icon('☰')}</button>
+        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">${icon('◎')}</button>
+        <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${icon(THEME_ICONS[theme])}</button>
+        <button id="refresh" title="刷新全部">${icon('⟳')}</button>
+        <button id="logout" title="退出登录">${icon('⏻')}</button>
       </div>
     </div>
     <div class="board board-${viewMode}">${body}</div>

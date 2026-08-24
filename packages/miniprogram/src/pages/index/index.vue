@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { onHide, onShow } from '@dcloudio/uni-app';
-import { NineRouterClient, type AccountQuota, type RequestAdapter } from '@9router-quota/core';
+import { NineRouterClient, iconTransform, type AccountQuota, type RequestAdapter } from '@9router-quota/core';
 import { createUniRequestAdapter } from '../../lib/uniRequestAdapter';
 import { saveSession, loadSession, clearSession } from '../../lib/session';
 import { formatAccount, type RenderedAccount } from '../../lib/formatAccount';
@@ -214,11 +214,11 @@ onUnmounted(() => {
       <view class="toolbar">
         <text class="toolbar-count">{{ accounts.length }} 个账号</text>
         <view class="actions">
-          <view class="tool-btn tool-btn-refresh" :class="{ spinning: refreshing }" @tap="onRefreshAll">⟳</view>
-          <view class="tool-btn tool-btn-list" :class="{ active: viewMode === 'list' }" @tap="toggleView">☰</view>
-          <view class="tool-btn" :class="{ active: viewMode === 'grid' }" @tap="toggleViewGrid">◎</view>
-          <view class="tool-btn" :class="theme === 'system' ? 'tool-btn-theme' : 'tool-btn-emoji'" @tap="cycleTheme">{{ THEME_ICONS[theme] }}</view>
-          <view class="tool-btn tool-btn-exit" @tap="onLogout">⏻</view>
+          <view class="tool-btn" :class="{ spinning: refreshing }" @tap="onRefreshAll"><text class="icon-ink" :style="{ transform: iconTransform('⟳') }">⟳</text></view>
+          <view class="tool-btn" :class="{ active: viewMode === 'list' }" @tap="toggleView"><text class="icon-ink" :style="{ transform: iconTransform('☰') }">☰</text></view>
+          <view class="tool-btn" :class="{ active: viewMode === 'grid' }" @tap="toggleViewGrid"><text class="icon-ink" :style="{ transform: iconTransform('◎') }">◎</text></view>
+          <view class="tool-btn" @tap="cycleTheme"><text class="icon-ink" :style="{ transform: iconTransform(THEME_ICONS[theme]) }">{{ THEME_ICONS[theme] }}</text></view>
+          <view class="tool-btn" @tap="onLogout"><text class="icon-ink" :style="{ transform: iconTransform('⏻') }">⏻</text></view>
         </view>
       </view>
       <scroll-view scroll-y class="board">
@@ -285,20 +285,17 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 8px 6px; }
 .toolbar-count { font-size: 11px; color: var(--desc, #8b96ac); }
 .actions { display: flex; gap: 2px; align-items: center; }
-/* 各图标来自不同 Unicode 区块，同一 font-size 下字形实际大小差很多。
-   以 ◎(几何图形区)为基准 16px，其余按字形比例单独校准到同等视觉尺寸。 */
+/* 各图标来自不同 Unicode 区块，同一 font-size 下墨迹大小差很多。
+   根修：统一 16px，glyph 外包 .icon-ink，由 core 的 iconTransform() 按
+   实测墨迹比例给 scale + translateY 找平。原来逐字形猜 font-size 修过
+   两次都反弹——跨平台字体不同，猜值收敛不了。 */
 .tool-btn {
   width: 22px; height: 22px; border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
   font-size: 16px; line-height: 1; color: var(--fg, #d6dde8);
 }
 .tool-btn.active { background: var(--input, #17233d); }
-.tool-btn-refresh { font-size: 17px; } /* ⟳ 补充箭头区，字形偏小 */
-.tool-btn-list { font-size: 15px; }    /* ☰ 杂项符号区，字形偏大 */
-.tool-btn-exit { font-size: 15px; }    /* ⏻ 杂项技术区，字形偏大 */
-.tool-btn-theme { font-size: 16px; }   /* ◐ 与基准 ◎ 同区块，等值 */
-/* 🌙/☀️ 是彩色 emoji，字形填满整个 em 框，同字号下比普通字形大一圈，单独调小 */
-.tool-btn-emoji { font-size: 13px; }
+.icon-ink { display: inline-block; line-height: 1; }
 .tool-btn.spinning { animation: tool-spin 0.8s linear infinite; }
 @keyframes tool-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .account-refresh {
