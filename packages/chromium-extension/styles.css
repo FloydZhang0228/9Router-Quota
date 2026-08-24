@@ -209,6 +209,9 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 }
 .account-sub { margin-left: auto; min-width: 0; color: var(--vscode-descriptionForeground); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .account-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   color: var(--vscode-descriptionForeground);
   padding: 0 2px;
