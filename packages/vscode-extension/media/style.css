@@ -94,24 +94,18 @@ button:hover { background: var(--vscode-button-hoverBackground); }
 .toolbar button, .actions button#logout {
   background: transparent;
   color: var(--vscode-foreground);
-  font-size: 13px;
-  /* 固定的居中方块槽位，不同Unicode字形本身粗细/留白不一样，光靠统一padding兜不住视觉一致性 */
+  /* 固定的居中方块槽位，svg 图标尺寸由 toolIconSvg() 固定为 14x14，几何与字体无关 */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 22px;
   height: 22px;
   padding: 0;
-  line-height: 1; /* 收束行盒，字形基线摆位不同时不参与居中计算 */
 }
 .toolbar button:hover { background: var(--vscode-toolbar-hoverBackground); }
-/*
- * 视觉等大的根修：统一 13px，glyph 外包一层 .icon-ink，由 app.js 顶部 ICON_INK
- * 实测墨迹比例给 scale + translateY。原来逐字形猜 font-size 修过两次都反弹——
- * 跨平台字体不同，猜值收敛不了；scale 不依赖字体度量，只看墨迹比例。
- * 旋转动画转按钮层，避免 keyframes 的 rotate 覆盖内层 scale。
- */
-.icon-ink { display: inline-block; line-height: 1; }
+/* 工具栏图标统一走 app.js 顶部 TOOL_ICONS 内联 SVG（currentColor 描边，viewBox 24），
+   彻底放弃 Unicode 字形——各平台字体墨迹比例/基线不可控，修了三次都不齐。 */
+.toolbar button svg { display: block; }
 .view-toggle[data-active="true"] {
   background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
   border-radius: 4px;
@@ -176,7 +170,6 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   background: transparent;
   color: var(--vscode-descriptionForeground);
   padding: 0 2px;
-  font-size: 12px;
   flex: none;
 }
 .account-refresh:hover { background: var(--vscode-toolbar-hoverBackground); color: var(--vscode-foreground); }

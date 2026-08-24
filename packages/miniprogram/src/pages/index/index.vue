@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { onHide, onShow } from '@dcloudio/uni-app';
-import { NineRouterClient, iconTransform, type AccountQuota, type RequestAdapter } from '@9router-quota/core';
+import { NineRouterClient, type AccountQuota, type RequestAdapter } from '@9router-quota/core';
 import { createUniRequestAdapter } from '../../lib/uniRequestAdapter';
 import { saveSession, loadSession, clearSession } from '../../lib/session';
 import { formatAccount, type RenderedAccount } from '../../lib/formatAccount';
@@ -12,7 +12,6 @@ import RecentFooter from '../../components/RecentFooter.vue';
 
 const REFRESH_INTERVAL_MS = 5 * 60_000; // 对齐 Chrome 端 REFRESH_INTERVAL_MIN = 5
 const THEME_KEY = 'nineRouterQuota.theme';
-const THEME_ICONS = { system: '◐', dark: '🌙', light: '☀️' } as const;
 
 const baseUrl = ref('');
 const password = ref('');
@@ -214,11 +213,11 @@ onUnmounted(() => {
       <view class="toolbar">
         <text class="toolbar-count">{{ accounts.length }} 个账号</text>
         <view class="actions">
-          <view class="tool-btn" :class="{ spinning: refreshing }" @tap="onRefreshAll"><text class="icon-ink" :style="{ transform: iconTransform('⟳') }">⟳</text></view>
-          <view class="tool-btn" :class="{ active: viewMode === 'list' }" @tap="toggleView"><text class="icon-ink" :style="{ transform: iconTransform('☰') }">☰</text></view>
-          <view class="tool-btn" :class="{ active: viewMode === 'grid' }" @tap="toggleViewGrid"><text class="icon-ink" :style="{ transform: iconTransform('◎') }">◎</text></view>
-          <view class="tool-btn" @tap="cycleTheme"><text class="icon-ink" :style="{ transform: iconTransform(THEME_ICONS[theme]) }">{{ THEME_ICONS[theme] }}</text></view>
-          <view class="tool-btn" @tap="onLogout"><text class="icon-ink" :style="{ transform: iconTransform('⏻') }">⏻</text></view>
+          <view class="tool-btn" :class="{ spinning: refreshing }" @tap="onRefreshAll"><view class="ti ti-refresh" /></view>
+          <view class="tool-btn" :class="{ active: viewMode === 'list' }" @tap="toggleView"><view class="ti ti-list" /></view>
+          <view class="tool-btn" :class="{ active: viewMode === 'grid' }" @tap="toggleViewGrid"><view class="ti ti-grid" /></view>
+          <view class="tool-btn" @tap="cycleTheme"><view class="ti" :class="'ti-theme-' + theme" /></view>
+          <view class="tool-btn" @tap="onLogout"><view class="ti ti-power" /></view>
         </view>
       </view>
       <scroll-view scroll-y class="board">
@@ -231,7 +230,7 @@ onUnmounted(() => {
               class="account-refresh"
               :class="{ spinning: refreshingIds.has(acc.id) }"
               @tap.stop="onRefreshAccount(acc.id)"
-            >⟳</view>
+            ><view class="ti ti-refresh" /></view>
             <text class="account-sub">{{ acc.account }}</text>
           </view>
           <view :class="viewMode === 'grid' ? 'ring-row' : ''">
@@ -285,24 +284,36 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 8px 6px; }
 .toolbar-count { font-size: 11px; color: var(--desc, #8b96ac); }
 .actions { display: flex; gap: 2px; align-items: center; }
-/* 各图标来自不同 Unicode 区块，同一 font-size 下墨迹大小差很多。
-   根修：统一 16px，glyph 外包 .icon-ink，由 core 的 iconTransform() 按
-   实测墨迹比例给 scale + translateY 找平。原来逐字形猜 font-size 修过
-   两次都反弹——跨平台字体不同，猜值收敛不了。 */
+/* 工具栏图标彻底放弃 Unicode 字形（各平台字体墨迹比例/基线不可控，修了三次都不齐），
+   改 SVG mask：路径与 core/src/icons.ts 同源（feather 风格，viewBox 0 0 24 24），
+   wxml 不支持内联 svg，用 -webkit-mask 数据 URI 的 alpha 遮罩上色——
+   颜色由 background-color 提供，跟随主题变量；改图标时两处同步。 */
 .tool-btn {
   width: 22px; height: 22px; border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px; line-height: 1; color: var(--fg, #d6dde8);
+  color: var(--fg, #d6dde8);
 }
 .tool-btn.active { background: var(--input, #17233d); }
-.icon-ink { display: inline-block; line-height: 1; }
+.ti {
+  width: 14px; height: 14px;
+  background-color: currentColor; /* mask 遮罩上色，颜色走按钮的 color */
+  -webkit-mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center;
+}
+.ti-refresh { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M23%204v6h-6%22%2F%3E%3Cpath%20d%3D%22M20.49%2015a9%209%200%201%201-2.12-9.36L23%2010%22%2F%3E%3C%2Fsvg%3E"); }
+.ti-list { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M8%206h13%22%2F%3E%3Cpath%20d%3D%22M8%2012h13%22%2F%3E%3Cpath%20d%3D%22M8%2018h13%22%2F%3E%3Cpath%20d%3D%22M3%206h.01%22%2F%3E%3Cpath%20d%3D%22M3%2012h.01%22%2F%3E%3Cpath%20d%3D%22M3%2018h.01%22%2F%3E%3C%2Fsvg%3E"); }
+.ti-grid { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%222.5%22%20fill%3D%22black%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E"); }
+.ti-theme-system { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22M12%203a9%209%200%200%201%200%2018Z%22%20fill%3D%22black%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E"); }
+.ti-theme-dark { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M21%2012.79A9%209%200%201%201%2011.21%203a7%207%200%200%200%209.79%209.79z%22%2F%3E%3C%2Fsvg%3E"); }
+.ti-theme-light { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%225%22%2F%3E%3Cline%20x1%3D%2212%22%20y1%3D%221%22%20x2%3D%2212%22%20y2%3D%223%22%2F%3E%3Cline%20x1%3D%2212%22%20y1%3D%2221%22%20x2%3D%2212%22%20y2%3D%2223%22%2F%3E%3Cline%20x1%3D%224.22%22%20y1%3D%224.22%22%20x2%3D%225.64%22%20y2%3D%225.64%22%2F%3E%3Cline%20x1%3D%2218.36%22%20y1%3D%2218.36%22%20x2%3D%2219.78%22%20y2%3D%2219.78%22%2F%3E%3Cline%20x1%3D%221%22%20y1%3D%2212%22%20x2%3D%223%22%20y2%3D%2212%22%2F%3E%3Cline%20x1%3D%2221%22%20y1%3D%2212%22%20x2%3D%2223%22%20y2%3D%2212%22%2F%3E%3Cline%20x1%3D%224.22%22%20y1%3D%2219.78%22%20x2%3D%225.64%22%20y2%3D%2218.36%22%2F%3E%3Cline%20x1%3D%2218.36%22%20y1%3D%225.64%22%20x2%3D%2219.78%22%20y2%3D%224.22%22%2F%3E%3C%2Fsvg%3E"); }
+.ti-power { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M18.36%206.64a9%209%200%201%201-12.73%200%22%2F%3E%3Cpath%20d%3D%22M12%202v10%22%2F%3E%3C%2Fsvg%3E"); }
 .tool-btn.spinning { animation: tool-spin 0.8s linear infinite; }
 @keyframes tool-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .account-refresh {
   width: 18px; height: 18px; border-radius: 3px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; color: var(--desc, #8b96ac);
+  color: var(--desc, #8b96ac);
 }
+.account-refresh .ti { width: 11px; height: 11px; }
 .account-refresh.spinning { animation: tool-spin 0.8s linear infinite; }
 .board { flex: 1; min-height: 0; }
 .account { padding: 8px 4px 10px; border-bottom: 1px solid var(--border, #24314f); }

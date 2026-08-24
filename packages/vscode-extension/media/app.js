@@ -1,23 +1,21 @@
 const vscode = acquireVsCodeApi();
 const root = document.getElementById('root');
 
-//工具栏图标墨迹校准：与 core/src/toolIcons.ts 同一份实测数据（webview 静态 JS 没法 import core）。
-//各 Unicode 字形墨迹比例不同，统一字号下视觉大小不一；用 scale 把墨迹缩放到一致，translateY 找平基线。
-//字形数据或比例变更时，两个文件要同步改。
-const ICON_INK = {
-  '☰': { ratio: 0.77, dy: 0.5 },
-  '◎': { ratio: 1.0, dy: 0 },
-  '◐': { ratio: 0.52, dy: -1 },
-  '🌙': { ratio: 0.66, dy: 0 },
-  '☀️': { ratio: 1.0, dy: 0 },
-  '⟳': { ratio: 0.87, dy: 0 },
-  '⏻': { ratio: 0.62, dy: 0 },
+//工具栏图标：与 core/src/icons.ts 同一份 SVG 路径（webview 静态 JS 没法 import core），
+//改图标时两个文件同步。彻底放弃 Unicode 字形——各平台字体墨迹比例/基线不可控，
+//逐字号猜值修过两次、transform scale 修过一次都不齐；SVG 几何固定，天然等大且居中。
+const TOOL_ICONS = {
+  refresh: '<path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+  grid: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>',
+  'theme-system': '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/>',
+  'theme-dark': '<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>',
+  'theme-light':
+    '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+  power: '<path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><path d="M12 2v10"/>',
 };
-const iconTransform = (glyph, targetEm = 1) => {
-  const { ratio, dy } = ICON_INK[glyph] || { ratio: 1, dy: 0 };
-  return `translateY(${dy}px) scale(${(targetEm / ratio).toFixed(3)})`;
-};
-const icon = (glyph) => `<span class="icon-ink" style="transform:${iconTransform(glyph)}">${glyph}</span>`;
+const toolIconSvg = (name, size = 14) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TOOL_ICONS[name] ?? ''}</svg>`;
 
 //账号数据也进webview state：retainContextWhenHidden只是尽力保留，内存紧张时webview
 //仍会被销毁重建。重建后若数据不在state里，就要干等一次完整刷新（几秒）才有画面，
@@ -36,7 +34,6 @@ let theme = restored?.theme || 'system';
 //崩溃，面板永远画不出内容。之前THEME_ICONS、RING_RADIUS/RING_CIRCUMFERENCE都在文件后半段
 //踩过这个坑（后者只在viewMode恢复成 'grid' 时才触发，比THEME_ICONS那次更隐蔽）。
 //以后新增的顶层const，只要可能被首帧渲染路径用到，都得挪到这一段里。
-const THEME_ICONS = { system: '◐', dark: '🌙', light: '☀️' };
 const RING_RADIUS = 22;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
@@ -217,11 +214,11 @@ function renderQuota() {
     <div class="toolbar">
       <span>更新于 ${time}</span>
       <div class="actions">
-        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">${icon('☰')}</button>
-        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">${icon('◎')}</button>
-        <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${icon(THEME_ICONS[theme])}</button>
-        <button id="refresh" title="刷新全部">${icon('⟳')}</button>
-        <button id="logout" title="退出登录">${icon('⏻')}</button>
+        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">${toolIconSvg('list')}</button>
+        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">${toolIconSvg('grid')}</button>
+        <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${toolIconSvg(`theme-${theme}`)}</button>
+        <button id="refresh" title="刷新全部">${toolIconSvg('refresh')}</button>
+        <button id="logout" title="退出登录">${toolIconSvg('power')}</button>
       </div>
     </div>
     <div class="board board-${viewMode}">${body}</div>
@@ -287,7 +284,7 @@ function renderAccount(acc, mode) {
       <div class="account-header">
         <span class="account-icon">${iconFor(acc.logo, acc.service)}</span>
         <span class="account-title">${escapeHtml(acc.service)}</span>${tier}
-        <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">⟳</button>
+        <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">${toolIconSvg("refresh", 12)}</button>
         <span class="account-sub">${sub}</span>
       </div>
       <div class="${mode === 'grid' ? 'ring-row' : ''}">${body}</div>

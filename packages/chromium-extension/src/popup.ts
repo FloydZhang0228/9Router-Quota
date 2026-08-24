@@ -1,4 +1,4 @@
-import { amountText, iconTransform, levelOf, remainingOf, timeAgo, timeUntil } from '@9router-quota/core';
+import { amountText, levelOf, remainingOf, timeAgo, timeUntil, toolIconSvg } from '@9router-quota/core';
 
 /**
  * 面板前端。渲染逻辑与VSCode端media/app.js同源，两处差异只有三点：
@@ -163,7 +163,6 @@ function setViewMode(mode: string): void {
   renderQuota();
 }
 
-const THEME_ICONS: Record<string, string> = { system: '◐', dark: '🌙', light: '☀️' };
 function cycleTheme(): void {
   theme = theme === 'system' ? 'dark' : theme === 'dark' ? 'light' : 'system';
   localStorage.setItem('theme', theme);
@@ -183,11 +182,11 @@ function renderQuota(): void {
     <div class="toolbar">
       <span>更新于 ${time}</span>
       <div class="actions">
-        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图"><span class="icon-ink" style="transform:${iconTransform('☰')}">☰</span></button>
-        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图"><span class="icon-ink" style="transform:${iconTransform('◎')}">◎</span></button>
-        <button id="theme-toggle" title="主题：跟随系统/深色/浅色"><span class="icon-ink" style="transform:${iconTransform(THEME_ICONS[theme])}">${THEME_ICONS[theme]}</span></button>
-        <button id="refresh" title="刷新全部"><span class="icon-ink" style="transform:${iconTransform('⟳')}">⟳</span></button>
-        <button id="logout" title="退出登录"><span class="icon-ink" style="transform:${iconTransform('⏻')}">⏻</span></button>
+        <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">${toolIconSvg('list')}</button>
+        <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">${toolIconSvg('grid')}</button>
+        <button id="theme-toggle" title="主题：跟随系统/深色/浅色">${toolIconSvg(`theme-${theme}`)}</button>
+        <button id="refresh" title="刷新全部">${toolIconSvg('refresh')}</button>
+        <button id="logout" title="退出登录">${toolIconSvg('power')}</button>
       </div>
     </div>
     <div class="board board-${viewMode}">${body}</div>
@@ -239,7 +238,7 @@ function renderAccount(acc: Account, mode: string): string {
       <div class="account-header">
         <span class="account-icon">${iconFor(acc.logo, acc.service)}</span>
         <span class="account-title">${escapeHtml(acc.service)}</span>${tier}
-        <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">⟳</button>
+        <button class="account-refresh" data-id="${escapeHtml(acc.id)}" title="刷新该账号">${toolIconSvg("refresh", 12)}</button>
         <span class="account-sub">${sub}</span>
       </div>
       <div class="${mode === 'grid' ? 'ring-row' : ''}">${body}</div>
