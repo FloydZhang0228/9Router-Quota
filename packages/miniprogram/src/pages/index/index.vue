@@ -213,7 +213,7 @@ onUnmounted(() => {
     </view>
     <view v-else class="ready">
       <view class="toolbar">
-        <text class="toolbar-count">{{ accounts.length }} 个账号 · v{{ APP_VERSION }}</text>
+        <text class="toolbar-count">{{ accounts.length }} 个账号</text>
         <view class="actions">
           <view class="tool-btn" :class="{ spinning: refreshing }" @tap="onRefreshAll"><view class="ti ti-refresh" /></view>
           <view class="tool-btn" :class="{ active: viewMode === 'list' }" @tap="toggleView"><view class="ti ti-list" /></view>

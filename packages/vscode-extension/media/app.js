@@ -215,7 +215,7 @@ function renderQuota() {
     : `<div class="status">未获取到任何账号配额</div>`;
   root.innerHTML = `
     <div class="toolbar">
-      <span>更新于 ${time} · v${VERSION}</span>
+      <span>更新于 ${time}</span>
       <div class="actions">
         <button id="view-list" class="view-toggle" data-active="${viewMode === 'list'}" title="列表视图">${toolIconSvg('list')}</button>
         <button id="view-grid" class="view-toggle" data-active="${viewMode === 'grid'}" title="圆环视图">${toolIconSvg('grid')}</button>
@@ -273,7 +273,7 @@ function footerRows(logs) {
 //容器本身始终渲染（哪怕暂时没数据），SSE消息才能直接找到它做局部更新；
 //也保证页脚位置从一开始就固定，不会等数据来了才“空降”。
 function renderRecentFooter() {
-  return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}</div>`;
+  return `<div class="recent-footer" id="recent-footer">${footerRows(lastLogs)}<div class="footer-version">v${VERSION}</div></div>`;
 }
 
 function renderAccount(acc, mode) {
