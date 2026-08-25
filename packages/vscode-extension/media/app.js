@@ -380,6 +380,7 @@ function renderRing(q) {
         </svg>
         <span class="ring-text">${text}</span>
       </div>
+      <span class="ring-label">${escapeHtml(q.name)}</span>
       ${q.resetAt ? `<span class="ring-meta">${timeUntil(q.resetAt)}</span>` : ''}
     </div>`;
 }

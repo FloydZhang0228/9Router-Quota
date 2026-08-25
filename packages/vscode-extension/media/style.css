@@ -285,6 +285,10 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   font-size: 11px; font-weight: 600; line-height: 1;
   padding: 0 2px; text-align: center;
 }
+.ring-label {
+  font-size: 10px; text-align: center; color: var(--vscode-descriptionForeground);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 72px;
+}
 .ring-meta {
   font-size: 9px; text-align: center; color: var(--vscode-descriptionForeground);
   opacity: 0.75; white-space: nowrap;
