@@ -211,6 +211,7 @@ button:hover { background: var(--vscode-button-hoverBackground); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transform: translateY(1px);
   background: transparent;
   color: var(--vscode-descriptionForeground);
   padding: 0 2px;

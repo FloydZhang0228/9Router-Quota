@@ -333,6 +333,7 @@ page { height: 100%; overflow: hidden; background: #0f1a2e; }
 .account-refresh {
   width: 18px; height: 18px; border-radius: 3px;
   display: flex; align-items: center; justify-content: center;
+  transform: translateY(1px);
   color: var(--desc, #8b96ac);
 }
 .account-refresh .ti { width: 11px; height: 11px; }
