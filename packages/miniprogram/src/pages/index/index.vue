@@ -254,7 +254,7 @@ onUnmounted(() => {
               </view>
               <view :class="viewMode === 'grid' ? 'ring-row' : ''">
                 <template v-if="viewMode === 'grid'">
-                  <QuotaRing v-for="(q, i) in acc.quotas" :key="i" :quota="q" :theme="resolvedTheme" />
+                  <QuotaRing v-for="(q, i) in acc.quotas" :key="i" :quota="q" :provider="acc.provider" :theme="resolvedTheme" />
                 </template>
                 <template v-else>
                   <QuotaRow v-for="(q, i) in acc.quotas" :key="i" :quota="q" :theme="resolvedTheme" />

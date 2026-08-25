@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { levelOf, remainingOf, amountText, timeUntil, type RenderedQuotaItem } from '@9router-quota/core';
 
-const props = defineProps<{ quota: RenderedQuotaItem; theme?: 'dark' | 'light' }>();
+const props = defineProps<{ quota: RenderedQuotaItem; provider: string; theme?: 'dark' | 'light' }>();
 
 const remaining = computed(() => remainingOf(props.quota));
 const amount = computed(() => amountText(props.quota));
@@ -33,7 +33,7 @@ const discStyle = computed(() => {
       <view class="ring-hole" />
       <text class="ring-text">{{ text }}</text>
     </view>
-    <text class="ring-label">{{ quota.name }}</text>
+    <text v-if="provider === 'antigravity'" class="ring-label">{{ quota.name }}</text>
     <text v-if="quota.resetAt" class="ring-meta">{{ timeUntil(quota.resetAt) }}</text>
   </view>
 </template>

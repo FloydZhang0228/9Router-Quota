@@ -315,7 +315,7 @@ function renderAccountGroup(acc, mode) {
   //右侧小字里容易看不见，升级为服务名旁的小徽标；Claude那种假plan已在扩展主机过滤掉。
   const tier = acc.plan ? `<span class="account-tier">${escapeHtml(acc.plan)}</span>` : '';
   const sub = acc.account ? escapeHtml(acc.account) : '';
-  const body = mode === 'grid' ? acc.quotas.map(renderRing).join('') : acc.quotas.map(renderQuotaRow).join('');
+  const body = mode === 'grid' ? acc.quotas.map((q) => renderRing(q, acc.provider)).join('') : acc.quotas.map(renderQuotaRow).join('');
   return `
     <div class="account-group">
       <div class="account-sub-header">
@@ -362,7 +362,7 @@ function renderQuotaRow(q) {
 
 //SVG描边环：数值由JS直接算好dasharray/dashoffset，不依赖CSS conic-gradient色标
 //的隐式排序规则（那条路线试了两版都在这个环境里渲染出问题），精确且没有歧义。
-function renderRing(q) {
+function renderRing(q, provider) {
   const remaining = remainingOf(q);
   const amount = amountText(q);
   const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
@@ -370,6 +370,9 @@ function renderRing(q) {
   const text = amount ?? (q.unlimited && remaining == null ? '∞' : remaining != null ? `${remaining.toFixed(0)}%` : '—');
   //彩色弧长 = 剩余比例；半透明轨道 = 已用。颜色也按剩余额度取档。
   const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
+  //只有Antigravity一环对一模型，name是区分多环的关键信息；其它provider的name大多是
+  //session/weekly这类窗口类型或跟倒计时重复的分类名，默认不展示。
+  const label = provider === 'antigravity' ? `<span class="ring-label">${escapeHtml(q.name)}</span>` : '';
   return `
     <div class="ring-card">
       <div class="ring">
@@ -380,7 +383,7 @@ function renderRing(q) {
         </svg>
         <span class="ring-text">${text}</span>
       </div>
-      <span class="ring-label">${escapeHtml(q.name)}</span>
+      ${label}
       ${q.resetAt ? `<span class="ring-meta">${timeUntil(q.resetAt)}</span>` : ''}
     </div>`;
 }

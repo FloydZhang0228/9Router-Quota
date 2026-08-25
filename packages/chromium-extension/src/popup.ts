@@ -253,7 +253,7 @@ function renderProviderCard(group: { service: string; logo: string | null; accou
 function renderAccountGroup(acc: Account, mode: string): string {
   const tier = acc.plan ? `<span class="account-tier">${escapeHtml(acc.plan)}</span>` : '';
   const sub = acc.account ? escapeHtml(acc.account) : '';
-  const body = mode === 'grid' ? acc.quotas.map(renderRing).join('') : acc.quotas.map(renderQuotaRow).join('');
+  const body = mode === 'grid' ? acc.quotas.map((q) => renderRing(q, acc.provider)).join('') : acc.quotas.map(renderQuotaRow).join('');
   return `
     <div class="account-group">
       <div class="account-sub-header">
@@ -292,13 +292,16 @@ function renderQuotaRow(q: Quota): string {
 const RING_RADIUS = 22;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-function renderRing(q: Quota): string {
+function renderRing(q: Quota, provider: string): string {
   const remaining = remainingOf(q);
   const amount = amountText(q);
   const level = remaining != null ? levelOf(remaining) : amount != null ? 'green' : 'none';
   const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
   const text = amount ?? (q.unlimited && remaining == null ? '∞' : remaining != null ? `${remaining.toFixed(0)}%` : '—');
   const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
+  //只有Antigravity一环对一模型，name是区分多环的关键信息；其它provider的name大多是
+  //session/weekly这类窗口类型或跟倒计时重复的分类名，默认不展示。
+  const label = provider === 'antigravity' ? `<span class="ring-label">${escapeHtml(q.name)}</span>` : '';
   return `
     <div class="ring-card">
       <div class="ring">
@@ -309,7 +312,7 @@ function renderRing(q: Quota): string {
         </svg>
         <span class="ring-text">${text}</span>
       </div>
-      <span class="ring-label">${escapeHtml(q.name)}</span>
+      ${label}
       ${q.resetAt ? `<span class="ring-meta">${timeUntil(q.resetAt)}</span>` : ''}
     </div>`;
 }
