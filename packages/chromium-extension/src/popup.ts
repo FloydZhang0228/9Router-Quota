@@ -299,9 +299,9 @@ function renderRing(q: Quota, provider: string): string {
   const percent = Math.max(0, Math.min(100, remaining ?? (amount != null ? 100 : 0)));
   const text = amount ?? (q.unlimited && remaining == null ? '∞' : remaining != null ? `${remaining.toFixed(0)}%` : '—');
   const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
-  //只有Antigravity一环对一模型，name是区分多环的关键信息；其它provider的name大多是
-  //session/weekly这类窗口类型或跟倒计时重复的分类名，默认不展示。
-  const label = provider === 'antigravity' ? `<span class="ring-label">${escapeHtml(q.name)}</span>` : '';
+  //Antigravity一环对一模型、DeepSeek一环对一币种余额，name是区分多环的关键信息；
+  //其它provider的name大多是session/weekly这类窗口类型或跟倒计时重复的分类名，默认不展示。
+  const label = provider === 'antigravity' || provider === 'deepseek' ? `<span class="ring-label">${escapeHtml(q.name)}</span>` : '';
   return `
     <div class="ring-card">
       <div class="ring">

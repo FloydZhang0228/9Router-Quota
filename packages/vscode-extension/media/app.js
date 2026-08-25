@@ -370,9 +370,9 @@ function renderRing(q, provider) {
   const text = amount ?? (q.unlimited && remaining == null ? '∞' : remaining != null ? `${remaining.toFixed(0)}%` : '—');
   //彩色弧长 = 剩余比例；半透明轨道 = 已用。颜色也按剩余额度取档。
   const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
-  //只有Antigravity一环对一模型，name是区分多环的关键信息；其它provider的name大多是
-  //session/weekly这类窗口类型或跟倒计时重复的分类名，默认不展示。
-  const label = provider === 'antigravity' ? `<span class="ring-label">${escapeHtml(q.name)}</span>` : '';
+  //Antigravity一环对一模型、DeepSeek一环对一币种余额，name是区分多环的关键信息；
+  //其它provider的name大多是session/weekly这类窗口类型或跟倒计时重复的分类名，默认不展示。
+  const label = provider === 'antigravity' || provider === 'deepseek' ? `<span class="ring-label">${escapeHtml(q.name)}</span>` : '';
   return `
     <div class="ring-card">
       <div class="ring">

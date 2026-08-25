@@ -33,7 +33,7 @@ const discStyle = computed(() => {
       <view class="ring-hole" />
       <text class="ring-text">{{ text }}</text>
     </view>
-    <text v-if="provider === 'antigravity'" class="ring-label">{{ quota.name }}</text>
+    <text v-if="provider === 'antigravity' || provider === 'deepseek'" class="ring-label">{{ quota.name }}</text>
     <text v-if="quota.resetAt" class="ring-meta">{{ timeUntil(quota.resetAt) }}</text>
   </view>
 </template>
