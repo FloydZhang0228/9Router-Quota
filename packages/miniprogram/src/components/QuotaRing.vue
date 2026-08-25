@@ -33,7 +33,6 @@ const discStyle = computed(() => {
       <view class="ring-hole" />
       <text class="ring-text">{{ text }}</text>
     </view>
-    <text class="ring-label">{{ quota.name }}</text>
     <text v-if="quota.resetAt" class="ring-meta">{{ timeUntil(quota.resetAt) }}</text>
   </view>
 </template>
@@ -44,6 +43,5 @@ const discStyle = computed(() => {
 .ring-disc { position: absolute; inset: 0; border-radius: 50%; }
 .ring-hole { position: absolute; inset: 4px; border-radius: 50%; background: var(--input, #0f1a2e); }
 .ring-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--fg, #d6dde8); }
-.ring-label { font-size: 10px; text-align: center; color: var(--desc, #8b96ac); max-width: 72px; overflow: hidden; }
 .ring-meta { font-size: 9px; text-align: center; color: var(--desc, #8b96ac); opacity: 0.75; }
 </style>
